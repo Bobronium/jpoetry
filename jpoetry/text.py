@@ -130,6 +130,11 @@ def number_to_text(number: str, ending=None) -> str:
         raise BadNumberError('Number is too big')
 
     number_in_words = pytils.numeral.in_words(actual_number)
+    words = number_in_words.split()
+
+    if len(words) > 1 and words[0] in {"один", "одна"}:
+        words.pop(0)
+        number_in_words = " ".join(words)
 
     if not ending:
         # Can't inflect the word without ending and main word.
@@ -138,7 +143,6 @@ def number_to_text(number: str, ending=None) -> str:
         # not just the current word. Sounds very complicated.
         return number_in_words + second_part
 
-    words = number_in_words.split()
     try:
         parsed_original_number = parse_word(number)
     except IndexError:
