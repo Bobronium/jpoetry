@@ -1,3 +1,4 @@
+import os
 import inspect
 from typing import TYPE_CHECKING
 from unittest import mock
@@ -5,6 +6,7 @@ from unittest import mock
 import pytest
 import pytest_mock
 
+os.environ["BOT_TOKEN"] = "00000000000000000"
 
 if TYPE_CHECKING:
     # help PyCharm to infer mocker type for autocompletes, real fixture defined in pytest_mock
@@ -18,7 +20,9 @@ def pytest_collection_modifyitems(session, config, items):
     Mark coroutine functions https://github.com/pytest-dev/pytest-asyncio/issues/61
     """
     for item in items:
-        if isinstance(item, pytest.Function) and inspect.iscoroutinefunction(item.function):
+        if isinstance(item, pytest.Function) and inspect.iscoroutinefunction(
+            item.function
+        ):
             item.add_marker(pytest.mark.asyncio)
 
 
@@ -40,4 +44,4 @@ def call():
 
 @pytest.fixture
 def hokku_text():
-    return 'ы ' * 17
+    return "ы " * 17

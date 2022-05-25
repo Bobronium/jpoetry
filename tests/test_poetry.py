@@ -13,7 +13,7 @@ from jpoetry.poetry import Genre, detect_poem, normalize_phrase
         ("'WOW!' — said the guy,", "'wow' — said the guy,"),
         ('"This is a quote"', "this is a quote"),
         ("∂ßƒ∂", "ßƒ"),
-        pytest.param("ß∂∂ƒ", "ßƒ", marks=pytest.mark.xfail),
+        pytest.param("ß∂∂ƒ", "ßƒ", marks=pytest.mark.xfail(reason="Word changed too much")),
     ),
 )
 def test_normalize_phrase(inp, out):
