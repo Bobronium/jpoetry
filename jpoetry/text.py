@@ -101,12 +101,11 @@ def quantitative_to_numeral(number: str) -> Parse:
     raise BadNumberError(f'Unable to get numeral from {number!r}')
 
 
-def number_to_text(number: str) -> str:
+def number_to_text(number: str, ending=None) -> str:
     """
     Convert number to cyrillic text, keeping its original form
     """
     actual_number_text = ''
-    ending = None
     second_part = ''
     number = ''.join(number.split())
     for i, char in enumerate(number):
@@ -116,7 +115,7 @@ def number_to_text(number: str) -> str:
             second_part = f' и {number_to_text(number[i + 1:])}'
             break
         elif char == '/':
-            second_part = f' из {number_to_text(number[i + 1:])}'
+            second_part = f' из {number_to_text(number[i + 1:], ending="ти")}'
             break
         elif any(char.isdecimal() for char in number[i:]):
             raise BadNumberError(f'Unable to parse number {number}')
@@ -130,23 +129,23 @@ def number_to_text(number: str) -> str:
     if actual_number > 10 ** 11:
         raise BadNumberError('Number is too big')
 
-    text = pytils.numeral.in_words(actual_number)
+    number_in_words = pytils.numeral.in_words(actual_number)
 
     if not ending:
         # Can't inflect the word without ending and main word.
         # We might be able to search the main word in the future.
         # This will require having entire sentence context when counting syllables,
         # not just the current word. Sounds very complicated.
-        return text + second_part
+        return number_in_words + second_part
 
-    numbers = text.split()
+    words = number_in_words.split()
     try:
         parsed_original_number = parse_word(number)
     except IndexError:
         raise BadNumberError(f'Unable to parse {number} with pymorphy2')
 
     # assume we always can parse output of num2text and values of QUANTITATIVE_TO_NUMERALS
-    parsed_last_number = parse_word(numbers[-1])
+    parsed_last_number = parse_word(words[-1])
     lexemes: list[Parse]
     if is_numeral := 'Anum' in parsed_original_number.tag:
         lexemes = quantitative_to_numeral(parsed_last_number.normalized.word).lexeme
@@ -155,17 +154,17 @@ def number_to_text(number: str) -> str:
 
     for lexeme in lexemes:
         if lexeme.word.endswith(ending):
-            numbers[-1] = lexeme.word
+            words[-1] = lexeme.word
             break
     else:
-        raise BadNumberError(f'Unable to find suitable lexeme for {text=} with {ending=}')
-    if is_numeral and not actual_number % 10 and len(numbers) > 1:
+        raise BadNumberError(f'Unable to find suitable lexeme for {number_in_words=} with {ending=}')
+    if is_numeral and not actual_number % 10 and len(words) > 1:
         return (
-            ''.join(parse_word(number).inflect({'gent'}).word for number in numbers[:-1])
-            + numbers[-1]
+            ''.join(parse_word(number).inflect({'gent'}).word for number in words[:-1])
+            + words[-1]
             + second_part
         )
-    return ' '.join(numbers) + second_part
+    return ' '.join(words) + second_part
 
 
 def count_word_syllables(word: str) -> int:

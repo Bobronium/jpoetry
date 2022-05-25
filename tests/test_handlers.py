@@ -2,8 +2,9 @@ from unittest.mock import Mock
 
 import pytest
 from aiogram.types import Message, User
+from pytest_mock import MockerFixture
 
-from jpoetry import bot
+from jpoetry import bot as bot_module
 from jpoetry.answers import HELP_TEXT, WELCOME_TEXT
 from jpoetry.config import DEFAULT_AUTHOR, TOO_LONG_MESSAGE_FILE
 from jpoetry.bot import bot, detect_and_send_poem, get_author, send_cheat_sheet, welcome_user
@@ -102,11 +103,12 @@ async def test_send_cheat_sheet(get_message, call):
     assert message.reply.mock_calls == [call(HELP_TEXT)]
 
 
-async def test_detect_and_send_poem_positive(get_message, mocker, call, hokku_text):
+async def test_detect_and_send_poem_positive(get_message, mocker: MockerFixture, call, hokku_text):
     message = get_message(hokku_text)
-    detect_poem_mock = mocker.patch('jpoetry.bot', 'detect_poem', Mock(return_value=detect_poem(hokku_text)))
-    create_poem_image_mock = mocker.patch('jpoetry.bot', 'get_poem_image')
-    input_file_mock = mocker.patch.object(bot, 'InputFile')
+    detect_poem_mock = mocker.patch.object(bot_module, 'detect_poem', Mock(return_value=detect_poem(hokku_text)))
+
+    create_poem_image_mock = mocker.patch.object(bot_module, 'get_poem_image')
+    input_file_mock = mocker.patch.object(bot_module, 'InputFile')
     send_message_mock = mocker.patch.object(bot, 'send_photo')
 
     await detect_and_send_poem(message)
@@ -121,13 +123,13 @@ async def test_detect_and_send_poem_positive(get_message, mocker, call, hokku_te
     ]
 
 
-async def test_detect_and_send_poem_too_long(get_message, mocker, call, hokku_text):
+async def test_detect_and_send_poem_too_long(get_message, mocker: MockerFixture, call, hokku_text):
     message = get_message(hokku_text)
     detect_poem_mock = mocker.patch.object(
-        bot, 'detect_poem', return_value=detect_poem(hokku_text)
+        bot_module, 'detect_poem', return_value=detect_poem(hokku_text)
     )
     create_poem_image_mock = mocker.patch.object(
-        bot, 'get_poem_image', side_effect=TooLongTextError
+        bot_module, 'get_poem_image', side_effect=TooLongTextError
     )
     send_message_mock = mocker.patch.object(bot, 'send_photo')
 
@@ -144,7 +146,7 @@ async def test_detect_and_send_poem_negative(get_message, call, mocker):
     message = get_message('Not a poem')
 
     detect_poem_mock = mocker.patch.object(
-        bot, 'detect_poem', return_value=detect_poem(message.text)
+        bot_module, 'detect_poem', return_value=detect_poem(message.text)
     )
     await detect_and_send_poem(message)
     assert detect_poem_mock.mock_calls == [call(message.text)]

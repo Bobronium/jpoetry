@@ -50,6 +50,8 @@ def test_quantitative_to_numeral_error(mocker):
             '10 456 269-й',
             'десять миллионов четыреста пятьдесят шесть тысяч двести шестьдесят девятый',
         ),
+        ('10/10', 'десять из десяти'),
+        
     ),
 )
 def test_number_to_text(number, text):
