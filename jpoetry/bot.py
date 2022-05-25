@@ -1,5 +1,4 @@
 import asyncio
-import imp
 import logging
 from io import BytesIO
 from pathlib import Path

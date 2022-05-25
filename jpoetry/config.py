@@ -16,4 +16,4 @@ KNOWN_GLYPHS = {char for table in TTFont(FONT)["cmap"].tables for char in table.
 BASE_COLOR = (94, 8, 8)  # dark
 ACCENT_COLOR = (135, 15, 15)  # dark with red tint
 
-BOT_TOKEN = os.environ["BOT_TOKEN"]
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
