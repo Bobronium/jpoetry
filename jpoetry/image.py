@@ -129,6 +129,4 @@ def draw_text(
     image_bytes = BytesIO()
     img.save(image_bytes, format="png")
     image_bytes.seek(0)
-    # DEBUG
-    img.show()
     return image_bytes
