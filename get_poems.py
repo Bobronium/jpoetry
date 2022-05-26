@@ -1,17 +1,14 @@
 import asyncio
 import json
 
-from jpoetry.text import number_to_text
+from jpoetry.text import spell_number
 
 
 with open('result.json') as r:
     results = json.load(r)
 
-t = """Mail.Ru Group, похоже, первой из российских компаний уходит на удаленку сразу до 2021 года. Об этом написал в Facebook ее представитель Сергей Лучин
 
- https://www.facebook.com/sergey.luchin/posts/3237531826316543 """
-
-print(number_to_text('3237531826316543'))
+print(spell_number('1000000'))
 
 
 async def main():

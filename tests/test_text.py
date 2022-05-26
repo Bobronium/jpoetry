@@ -11,7 +11,7 @@ from jpoetry.text import (
     count_word_syllables,
     get_words_info,
     morph,
-    number_to_text,
+    spell_number,
     parse_word,
     quantitative_to_numeral,
 )
@@ -44,6 +44,7 @@ def test_quantitative_to_numeral_error(mocker):
         ('3.5', 'три и пять'),
         ('3.5-й', 'три и пятый'),
         ('1 000', 'тысяча'),
+        ('1 000-й', 'тысячный'),
         ('100 000', 'сто тысяч'),
         ('1 000 000', 'миллион'),
         ('100 000-й', 'стотысячный'),
@@ -53,11 +54,19 @@ def test_quantitative_to_numeral_error(mocker):
             'десять миллионов четыреста пятьдесят шесть тысяч двести шестьдесят девятый',
         ),
         ('10/10', 'десять из десяти'),
-        
+        ('1/1000', 'один из тысячи'),
+        ('1/10000', 'один из десяти тысяч'),
+        ('1/100 000', 'один из ста тысяч'),
+        ('1:1', 'один к одному'),
+        ('10:10', 'десять к десяти'),
+        ('1:1000', 'один к тысяче'),
+        ('1:10000', 'один к десяти тысячам'),
+        ('1:100 000', 'один к ста тысячам'),
+        ('1:1 100 000', 'один к миллиону ста тысячам'),
     ),
 )
 def test_number_to_text(number, text):
-    assert number_to_text(number) == text
+    assert spell_number(number) == text
 
 
 @pytest.mark.parametrize(

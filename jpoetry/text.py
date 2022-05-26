@@ -1,3 +1,4 @@
+from cmath import inf
 import string
 from contextlib import suppress
 from typing import NamedTuple
@@ -12,10 +13,10 @@ from jpoetry.utils import InverseMapping
 
 morph = MorphAnalyzer()
 
-LATIN_VOWELS: set[str] = {'a', 'e', 'i', 'o', 'u', 'y'}
-CYRILLIC_VOWELS: set[str] = {'а', 'е', 'ё', 'и', 'о', 'у', 'ы', 'э', 'ю', 'я'}
+LATIN_VOWELS: set[str] = {"a", "e", "i", "o", "u", "y"}
+CYRILLIC_VOWELS: set[str] = {"а", "е", "ё", "и", "о", "у", "ы", "э", "ю", "я"}
 # remove unknown characters
-UNKNOWN_CHAR_TRANSLATOR: InverseMapping[int, str] = InverseMapping(KNOWN_GLYPHS, '')
+UNKNOWN_CHAR_TRANSLATOR: InverseMapping[int, str] = InverseMapping(KNOWN_GLYPHS, "")
 ASCII = set(string.ascii_letters)
 
 
@@ -27,50 +28,50 @@ def parse_word(word: str) -> Parse:
     try:
         return morph.parse(word)[0]
     except IndexError:
-        raise ParseError('Unable to parse word')
+        raise ParseError("Unable to parse word")
 
 
 QUANTITATIVE_TO_NUMERALS: dict[str, Parse] = {
     k: parse_word(v)
     for k, v in {
-        'один': 'первый',
-        'два': 'второй',
-        'три': 'третий',
-        'четыре': 'четвёртый',
-        'пять': 'пятый',
-        'шесть': 'шестой',
-        'семь': 'седьмой',
-        'восемь': 'восьмой',
-        'девять': 'девятый',
-        'десять': 'десятый',
-        'одиннадцать': 'одиннадцатый',
-        'двенадцать': 'двенадцатый',
-        'тринадцать': 'тринадцатый',
-        'четырнадцать': 'четырнадцатый',
-        'пятнадцать': 'пятнадцатый',
-        'шестнадцать': 'шестнадцатый',
-        'семнадцать': 'семнадцатый',
-        'восемнадцать': 'восемнадцатый',
-        'девятнадцать': 'девятнадцатый',
-        'двадцать': 'двадцатый',
-        'тридцать': 'тридцатый',
-        'сорок': 'сороковой',
-        'пятьдесят': 'пятидесятый',
-        'шестьдесят': 'шестидесятый',
-        'семьдесят': 'семидесятый',
-        'восемьдесят': 'восьмидесятый',
-        'девяносто': 'девяностый',
-        'сто': 'сотый',
-        'двести': 'двухсотый',
-        'триста': 'трёхсотый',
-        'четыреста': 'четырёхсотый',
-        'пятьсот': 'пятисотый',
-        'шестьсот': 'шестисотый',
-        'семьсот': 'семисотый',
-        'восемьсот': 'восьмисотый',
-        'девятьсот': 'девятисотый',
-        'тысяча': 'тысячный',
-        'миллион': 'миллионный',
+        "один": "первый",
+        "два": "второй",
+        "три": "третий",
+        "четыре": "четвёртый",
+        "пять": "пятый",
+        "шесть": "шестой",
+        "семь": "седьмой",
+        "восемь": "восьмой",
+        "девять": "девятый",
+        "десять": "десятый",
+        "одиннадцать": "одиннадцатый",
+        "двенадцать": "двенадцатый",
+        "тринадцать": "тринадцатый",
+        "четырнадцать": "четырнадцатый",
+        "пятнадцать": "пятнадцатый",
+        "шестнадцать": "шестнадцатый",
+        "семнадцать": "семнадцатый",
+        "восемнадцать": "восемнадцатый",
+        "девятнадцать": "девятнадцатый",
+        "двадцать": "двадцатый",
+        "тридцать": "тридцатый",
+        "сорок": "сороковой",
+        "пятьдесят": "пятидесятый",
+        "шестьдесят": "шестидесятый",
+        "семьдесят": "семидесятый",
+        "восемьдесят": "восьмидесятый",
+        "девяносто": "девяностый",
+        "сто": "сотый",
+        "двести": "двухсотый",
+        "триста": "трёхсотый",
+        "четыреста": "четырёхсотый",
+        "пятьсот": "пятисотый",
+        "шестьсот": "шестисотый",
+        "семьсот": "семисотый",
+        "восемьсот": "восьмисотый",
+        "девятьсот": "девятисотый",
+        "тысяча": "тысячный",
+        "миллион": "миллионный",
         # AFAIK any numeral starting from here is just num + 'ный'
     }.items()
 }
@@ -94,47 +95,65 @@ def quantitative_to_numeral(number: str) -> Parse:
         return QUANTITATIVE_TO_NUMERALS[number]
 
     with suppress(ParseError):
-        parsed_number = parse_word(number + 'ный')
-        if 'Anum' in parsed_number.tag:
+        parsed_number = parse_word(number + "ный")
+        if "Anum" in parsed_number.tag:
             return parsed_number.word
 
-    raise BadNumberError(f'Unable to get numeral from {number!r}')
+    raise BadNumberError(f"Unable to get numeral from {number!r}")
 
 
-def number_to_text(number: str, ending=None) -> str:
+def spell_number(decimal: str, inflect: str = None) -> str:
     """
     Convert number to cyrillic text, keeping its original form
     """
-    actual_number_text = ''
-    second_part = ''
-    number = ''.join(number.split())
-    for i, char in enumerate(number):
+    first_decimal_part = ""
+    second_part = ""
+    decimal = "".join(decimal.split())
+    ending = None
+    for i, char in enumerate(decimal):
         if char.isdecimal():
-            actual_number_text += char
-        elif char == '.':
-            second_part = f' и {number_to_text(number[i + 1:])}'
+            first_decimal_part += char
+        elif char == ".":
+            second_part = f" и {spell_number(decimal[i + 1:])}"
             break
-        elif char == '/':
-            second_part = f' из {number_to_text(number[i + 1:], ending="ти")}'
+        elif char == "/":
+            second_part = f' из {spell_number(decimal[i + 1:], inflect="gent")}'
             break
-        elif any(char.isdecimal() for char in number[i:]):
-            raise BadNumberError(f'Unable to parse number {number}')
-        elif (ending := number[i:]).startswith('-'):  # is this readable? Do you find it confusing?
+        elif char == ":":
+            second_part = f' к {spell_number(decimal[i + 1:], inflect="datv")}'
+            break
+        elif any(char.isdecimal() for char in decimal[i:]):
+            raise BadNumberError(f"Unable to parse number {decimal}")
+        elif (ending := decimal[i:]).startswith(
+            "-"
+        ):  # is this readable? Do you find it confusing?
             ending = ending[1:]
             break
     try:
-        actual_number = int(actual_number_text)
+        first_decimal = int(first_decimal_part)
     except ValueError:
-        raise BadNumberError('Value is not a number')
-    if actual_number > 10 ** 11:
-        raise BadNumberError('Number is too big')
+        raise BadNumberError("Value is not a number")
+    if first_decimal > 10**11:
+        raise BadNumberError("Number is too big")
 
-    number_in_words = pytils.numeral.in_words(actual_number)
+    number_in_words = pytils.numeral.in_words(first_decimal)
     words = number_in_words.split()
 
     if len(words) > 1 and words[0] in {"один", "одна"}:
         words.pop(0)
         number_in_words = " ".join(words)
+
+    if inflect:
+        inflected: list[str] = []
+
+        for word in words:
+            if word == 'сто' and inflect in {"gent", "datv"}:
+                # special case
+                inflected.append('ста')
+            else:
+                inflected.append(parse_word(word).inflect({inflect}).word)
+
+        return " ".join(inflected) + second_part
 
     if not ending:
         # Can't inflect the word without ending and main word.
@@ -144,14 +163,14 @@ def number_to_text(number: str, ending=None) -> str:
         return number_in_words + second_part
 
     try:
-        parsed_original_number = parse_word(number)
+        parsed_original_number = parse_word(decimal)
     except IndexError:
-        raise BadNumberError(f'Unable to parse {number} with pymorphy2')
+        raise BadNumberError(f"Unable to parse {decimal} with pymorphy2")
 
     # assume we always can parse output of num2text and values of QUANTITATIVE_TO_NUMERALS
     parsed_last_number = parse_word(words[-1])
     lexemes: list[Parse]
-    if is_numeral := 'Anum' in parsed_original_number.tag:
+    if is_numeral := "Anum" in parsed_original_number.tag:
         lexemes = quantitative_to_numeral(parsed_last_number.normalized.word).lexeme
     else:
         lexemes = parsed_last_number.lexeme
@@ -161,14 +180,16 @@ def number_to_text(number: str, ending=None) -> str:
             words[-1] = lexeme.word
             break
     else:
-        raise BadNumberError(f'Unable to find suitable lexeme for {number_in_words=} with {ending=}')
-    if is_numeral and not actual_number % 10 and len(words) > 1:
+        raise BadNumberError(
+            f"Unable to find suitable lexeme for {number_in_words=} with {ending=}"
+        )
+    if is_numeral and not first_decimal % 10 and len(words) > 1:
         return (
-            ''.join(parse_word(number).inflect({'gent'}).word for number in words[:-1])
+            "".join(parse_word(number).inflect({"gent"}).word for number in words[:-1])
             + words[-1]
             + second_part
         )
-    return ' '.join(words) + second_part
+    return " ".join(words) + second_part
 
 
 def count_word_syllables(word: str) -> int:
@@ -183,18 +204,18 @@ def count_word_syllables(word: str) -> int:
     word_length = len(word)
     last_char_index = word_length - 1
 
-    current_number = ''
+    current_number = ""
     number_syllables = 0
     for i, char in enumerate(word):
-        if char.isdecimal() or current_number and char != ' ':
+        if char.isdecimal() or current_number and char != " ":
             current_number += char
             continue
         elif current_number:
             # allow numbers separated by space like 100 000
             if word[min(i + 1, last_char_index)].isdecimal():
                 continue
-            number_syllables += count_word_syllables(number_to_text(current_number))
-            current_number = ''
+            number_syllables += count_word_syllables(spell_number(current_number))
+            current_number = ""
             continue
 
         if char in CYRILLIC_VOWELS:
@@ -206,16 +227,18 @@ def count_word_syllables(word: str) -> int:
                 syllables += 1
 
     if current_number:
-        number_syllables += count_word_syllables(number_to_text(current_number))
+        number_syllables += count_word_syllables(spell_number(current_number))
 
-    if word.endswith('e'):
+    if word.endswith("e"):
         syllables -= 1
-    if word.endswith('le') and word_length > 2 and word[-3] not in LATIN_VOWELS:
+    if word.endswith("le") and word_length > 2 and word[-3] not in LATIN_VOWELS:
         syllables += 1
 
     if not syllables and set(word) & ASCII:
         # TODO: check abbr tag in parsed word
-        syllables = len(word.replace(current_number, ''))  # likely abbreviation or single letter
+        syllables = len(
+            word.replace(current_number, "")
+        )  # likely abbreviation or single letter
 
     return syllables + number_syllables
 
