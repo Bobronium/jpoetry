@@ -196,7 +196,7 @@ def compose_phrases(
     ok = True
     for i, needed_syllables in enumerate(poem_syllables):
         phrase = Phrase(position=(i, final_line), expected_syllables=needed_syllables)
-        while phrase.syllables < needed_syllables:
+        while words_info and phrase.syllables < needed_syllables:
             phrase.add_word(words_info.pop(0))
 
         if phrase.issues:
