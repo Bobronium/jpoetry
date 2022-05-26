@@ -59,7 +59,8 @@ FROM python-base as development
 WORKDIR $PYSETUP_PATH
 
 # copy in our built poetry + venv
-COPY --from=builder-base $POETRY_HOME $POETRY_HOME
+COPY --from=builder-base $PIPX_HOME $PIPX_HOME
+COPY --from=builder-base $PIPX_BIN_DIR $PIPX_BIN_DIR
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
 
