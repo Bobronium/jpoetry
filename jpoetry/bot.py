@@ -2,6 +2,7 @@ import asyncio
 import logging
 from io import BytesIO
 from pathlib import Path
+import sys
 
 from aiogram import Bot, Dispatcher
 from aiogram.utils.markdown import escape_md
@@ -23,8 +24,18 @@ from jpoetry.text import remove_unsupported_chars
 from jpoetry.utils import Timer
 
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+class InterceptHandler(logging.Handler):
+    def emit(self, record) -> None:
+        logger_opt = logger.opt(depth=6, exception=record.exc_info)
+        message = record.getMessage()
+        while r'\u' in message:
+            message = message.encode().decode('unicode-escape')
+        logger_opt.log(record.levelno, message)
+
+
+logging.basicConfig(handlers=[InterceptHandler()], level=0)
+
+logger.add(sys.stderr, level="DEBUG")
 
 # Initialize bot and dispatcher
 bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.MARKDOWN_V2, validate_token=False)
@@ -80,9 +91,7 @@ async def print_info(message: Message) -> None:
         await message_to_reply.reply(escape_md("Ну хуй знает..."))
     else:
         await message_to_reply.reply(
-            escape_md(
-                " ".join(map(repr, words_info)) + f"\n\nИтого: {total_syllables}"
-            )
+            escape_md(" ".join(map(repr, words_info)) + f"\n\nИтого: {total_syllables}")
         )
 
 
@@ -118,5 +127,7 @@ async def detect_and_send_poem(message: Message) -> None:
 
 def get_poem_image(poem: Poem, author: str) -> BytesIO:
     return draw_text(
-        POETRY_IMAGES_INFO[poem.genre], phrases=list(map(str, poem.phrases)), author=[f"— {author}"]
+        POETRY_IMAGES_INFO[poem.genre],
+        phrases=list(map(str, poem.phrases)),
+        author=[f"— {author}"],
     )
