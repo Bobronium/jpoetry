@@ -1,23 +1,31 @@
-from dataclasses import asdict, dataclass
+from dataclasses import Field, asdict, dataclass, field
 from enum import Enum
-from typing import Generator, NamedTuple, Optional
+import textwrap
+from turtle import position
+from typing import Annotated, Generator, NamedTuple, Optional
 
 from loguru import logger
+from pydantic.fields import FieldInfo
 
-from jpoetry.text import UNKNOWN_CHAR_TRANSLATOR, WordInfo, get_words_info
+from jpoetry.text import (
+    SUPERSCRIPT_NUMBERS_TRANSLATOR,
+    UNKNOWN_CHAR_TRANSLATOR,
+    WordInfo,
+    get_words_info,
+)
 
 
 # remove all unsuitable chars from words in the middle of lines
-NON_FINAL_WORD_TRANSLATE_MAP = dict.fromkeys(map(ord, '.!?'), '')
-NON_FINAL_WORDS: set[str] = {'в', 'на', 'из-под', 'под', 'или', 'по', 'над'}
+NON_FINAL_WORD_TRANSLATE_MAP = dict.fromkeys(map(ord, ".!?"), "")
+NON_FINAL_WORDS: set[str] = {"в", "на", "из-под", "под", "или", "по", "над"}
 
 
 class Genre(str, Enum):
-    katauta = 'Катаута'
-    hokku = 'Хокку'
-    tanka = 'Танка'
-    bussokusekika = 'Бусоку-сёкитаи'
-    sedoka = 'Сэдока'
+    katauta = "Катаута"
+    hokku = "Хокку"
+    tanka = "Танка"
+    bussokusekika = "Бусоку-сёкитаи"
+    sedoka = "Сэдока"
 
     def __str__(self) -> str:
         return self.value
@@ -58,84 +66,143 @@ class BadCharError(ValueError):
     ...
 
 
+class Issue(str):
+    ...
+
+
+TOO_MANY_SYLLABLES = Issue("Too many syllables")
+NOT_ENOUGH_SYLLABLES = Issue("Too many syllables")
+
+
+@dataclass
+class Phrase:
+    position: tuple[int, int]
+    expected_syllables: int
+    words: list[WordInfo] = field(default_factory=list)
+    issues: set[Issue] = field(default_factory=lambda: {NOT_ENOUGH_SYLLABLES})
+    syllables: int = 0
+
+    def __len__(self) -> int:
+        return len(self.words)
+
+    def add_word(self, word_info: WordInfo) -> None:
+        self.syllables += word_info.syllables
+        final = False
+        if self.syllables >= self.expected_syllables:
+            if self.syllables > self.expected_syllables:
+                self.issues.add(TOO_MANY_SYLLABLES)
+            self.issues.discard(NOT_ENOUGH_SYLLABLES)
+            final = True
+
+        self.words.append(
+            WordInfo(self.normalize_word(word_info.word, final), word_info.syllables)
+        )
+
+    def normalize_word(self, word: str, final: bool) -> str:
+        """
+        Remove all unsuitable characters from a poem phrase
+        Allow punctuation marks only after last words in phrase
+        """
+        # make text nicer by removing misused quotes
+        if word.startswith(("«", '"', "'")) != word.endswith(("'", '"', "»")):
+            word = word.strip('«»"' + "'")
+
+        word_without_unknown_chars = word.translate(UNKNOWN_CHAR_TRANSLATOR)
+        if word_without_unknown_chars not in word:
+            self.issues.add(
+                Issue(
+                    f"Word changed too much after removing unknown characters: {word}"
+                )
+            )
+
+        word = word_without_unknown_chars
+
+        if not final:
+            word = word.translate(NON_FINAL_WORD_TRANSLATE_MAP)
+        elif word in NON_FINAL_WORDS and self.position[1] - self.position[0] != 1:
+            self.issues.add(Issue(f"Phrase ends with a forbidden word: {word}"))
+
+        return word.lower()
+
+    def __str__(self) -> str:
+        return " ".join(map(str, self.words))
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.position[0] + 1}/{self.position[1] + 1}. "
+            + " ".join(map(repr, self.words))
+            + (
+                f" ({self.syllables}/{self.expected_syllables})"
+                if self.syllables != self.expected_syllables
+                else f" ({self.expected_syllables})"
+            ).translate(SUPERSCRIPT_NUMBERS_TRANSLATOR)
+            + (
+                textwrap.indent("Issues:\n" + "\n".join(self.issues), "\t")
+                if self.issues
+                else ""
+            )
+        )
+
+
 @dataclass(frozen=True)
 class Poem:
     genre: Genre
-    phrases: list[str]
+    phrases: list[Phrase]
+    has_issues: bool
 
     def __str__(self) -> str:
-        return '\n'.join(self.phrases)
+        return "\n".join(map(str, self.phrases))
 
     def __repr__(self) -> str:
-        return repr(asdict(self))
+        return f"{self.genre}\n\n" + "\n".join(map(repr, self.phrases))
 
 
-def detect_poem(text: str) -> Optional[Poem]:
+def detect_poem(
+    text: str, strict: bool = True
+) -> tuple[Poem | None, list[WordInfo] | None, int | None]:
     """
     Check if text might be a poem and return one if it is
     """
     words = text.split()
     if not MIN_WORDS <= len(words) <= MAX_WORDS:
-        return None
+        return None, None, None
 
     try:
         words_info, total_syllables = get_words_info(words)
     except ValueError:
-        return None
-    for poem_info in POEMS_INFO_MAP.get(total_syllables, []):
-        phrases = compose_phrases(words_info.copy(), poem_info.syllables)
-        if phrases is not None:
-            return Poem(poem_info.genre, phrases)
+        return None, None, None
 
-    return None
+    for poem_info in POEMS_INFO_MAP.get(total_syllables, []):
+        phrases, ok = compose_phrases(
+            words_info.copy(), poem_info.syllables, strict=strict
+        )
+        return (
+            Poem(poem_info.genre, phrases, has_issues=not ok),
+            words_info,
+            total_syllables,
+        )
+
+    return None, words_info, total_syllables
 
 
 def compose_phrases(
-    words_info: list[WordInfo], poem_syllables: tuple[int, ...]
-) -> Optional[list[str]]:
+    words_info: list[WordInfo], poem_syllables: tuple[int, ...], strict: bool = True
+) -> tuple[list[Phrase], bool]:
     """
     Compose phrases from list of words, and their syllables to a poem figure
     """
-    phrases: list[str] = []
-    pre_final_line = len(poem_syllables) - 2
+    phrases: list[Phrase] = []
+    final_line = len(poem_syllables) - 1
+    ok = True
     for i, needed_syllables in enumerate(poem_syllables):
-        phrase: list[str] = []
-        phrase_syllables = 0
-        while phrase_syllables < needed_syllables:
-            word, word_syllables = words_info.pop(0)
-            phrase_syllables += word_syllables
-            phrase.append(word)
+        phrase = Phrase(position=(i, final_line), expected_syllables=needed_syllables)
+        while phrase.syllables < needed_syllables:
+            phrase.add_word(words_info.pop(0))
 
-        if phrase_syllables != needed_syllables:
-            return None
-        try:
-            phrases.append(' '.join(normalize_phrase(phrase, pre_final=i == pre_final_line)))
-        except BadPhraseError as e:
-            logger.info(repr(e))
-            return None
+        if phrase.issues:
+            if strict:
+                raise BadPhraseError(repr(phrase))
+            ok = False
+        phrases.append(phrase)
 
-    return phrases
-
-
-def normalize_phrase(phrase: list[str], pre_final: bool = False) -> Generator[str, None, None]:
-    """
-    Remove all unsuitable characters from a poem phrase
-    Allow punctuation marks only after last words in phrase
-    """
-    final_word = len(phrase) - 1
-    for i, word in enumerate(phrase):
-        # make text nicer by removing misused quotes
-        if word.startswith(('«', '"', "'")) != word.endswith(("'", '"', '»')):
-            word = word.strip('«»"' + "'")
-
-        word_without_unknown_chars = word.translate(UNKNOWN_CHAR_TRANSLATOR)
-        if word_without_unknown_chars not in word:
-            raise BadCharError(f'Word changed too much after removing unknown characters')
-        word = word_without_unknown_chars
-
-        if i != final_word:
-            word = word.translate(NON_FINAL_WORD_TRANSLATE_MAP)
-        elif word in NON_FINAL_WORDS and not pre_final:
-            raise BadPhraseError(f'Encounter bad word in the end of non-pre-final line: {word}')
-
-        yield word.lower()
+    return phrases, ok
