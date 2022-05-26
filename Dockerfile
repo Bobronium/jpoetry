@@ -1,6 +1,6 @@
 # used this example as a reference: https://github.com/python-poetry/poetry/discussions/1879#discussioncomment-216865
 # `python-base` sets up all our shared environment variables
-FROM python:3.9.2-slim as python-base
+FROM python:3.10.1-slim as python-base
 
     # python
 ENV PYTHONUNBUFFERED=1 \
