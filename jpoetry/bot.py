@@ -1,24 +1,18 @@
 import asyncio
 import logging
+import sys
 from io import BytesIO
 from pathlib import Path
-import sys
 
 from aiogram import Bot, Dispatcher
+from aiogram.types import ContentType, InputFile, Message, ParseMode, Update
 from aiogram.utils.markdown import escape_md
-from aiogram.types import ContentType, InputFile, Message, ParseMode
 from loguru import logger
 
 from jpoetry.answers import HELP_TEXT, WELCOME_TEXT
 from jpoetry.config import BOT_TOKEN, DEFAULT_AUTHOR, TOO_LONG_MESSAGE_FILE
 from jpoetry.image import TooLongTextError, draw_text
-from jpoetry.poetry import (
-    POEMS_INFO_MAP,
-    BadPhraseError,
-    Poem,
-    compose_phrases,
-    detect_poem,
-)
+from jpoetry.poetry import Poem, detect_poem
 from jpoetry.templates import POETRY_IMAGES_INFO
 from jpoetry.text import remove_unsupported_chars
 from jpoetry.utils import Timer
@@ -101,7 +95,7 @@ M = Path(__file__).parent / "messages.json"
 # @dp.channel_post_handler(content_types=ContentType.ANY)
 # @dp.edited_channel_post_handler(content_types=ContentType.ANY)
 @dp.message_handler(content_types=ContentType.ANY)
-@dp.edited_message_handler(content_types=ContentType.ANY)
+# @dp.edited_message_handler(content_types=ContentType.ANY)
 async def detect_and_send_poem(message: Message) -> None:
     if message.text is None:
         return
