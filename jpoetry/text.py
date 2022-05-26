@@ -18,6 +18,9 @@ CYRILLIC_VOWELS: set[str] = {"а", "е", "ё", "и", "о", "у", "ы", "э", "ю
 # remove unknown characters
 UNKNOWN_CHAR_TRANSLATOR: InverseMapping[int, str] = InverseMapping(KNOWN_GLYPHS, "")
 ASCII = set(string.ascii_letters)
+SUPERSCRIPT_NUMBERS_TRANSLATOR = {
+    ord(number): superscript for number, superscript in zip("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+}
 
 
 def remove_unsupported_chars(text: str) -> str:
@@ -80,6 +83,12 @@ QUANTITATIVE_TO_NUMERALS: dict[str, Parse] = {
 class WordInfo(NamedTuple):
     word: str
     syllables: int
+
+    def __str__(self) -> str:
+        return self.word
+
+    def __repr__(self) -> str:
+        return f"{self.word}{str(self.syllables).translate(SUPERSCRIPT_NUMBERS_TRANSLATOR)}"
 
 
 class BadNumberError(ValueError):
@@ -147,9 +156,9 @@ def spell_number(decimal: str, inflect: str = None) -> str:
         inflected: list[str] = []
 
         for word in words:
-            if word == 'сто' and inflect in {"gent", "datv"}:
+            if word == "сто" and inflect in {"gent", "datv"}:
                 # special case
-                inflected.append('ста')
+                inflected.append("ста")
             else:
                 inflected.append(parse_word(word).inflect({inflect}).word)
 
@@ -245,7 +254,7 @@ def count_word_syllables(word: str) -> int:
 
 def get_words_info(words: list[str]) -> tuple[list[WordInfo], int]:
     total_syllables = 0
-    words_info = []
+    words_info: list[WordInfo] = []
     for word in words:
         syllables = count_word_syllables(word)
         total_syllables += syllables
