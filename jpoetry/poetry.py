@@ -1,11 +1,8 @@
-from dataclasses import Field, asdict, dataclass, field
-from enum import Enum
 import textwrap
-from turtle import position
-from typing import Annotated, Generator, NamedTuple, Optional
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import NamedTuple
 
-from loguru import logger
-from pydantic.fields import FieldInfo
 
 from jpoetry.text import (
     SUPERSCRIPT_NUMBERS_TRANSLATOR,
