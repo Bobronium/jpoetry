@@ -11,7 +11,7 @@ python = "^3.10"
 aiogram = "~2.11"
 pydantic = "^1.7.3"
 fonttools = "^4.20.0"
-Pillow = "~8.1"
+Pillow = "~9"
 
 pytils = "^0.3"
 pymorphy2 = "^0.9"
