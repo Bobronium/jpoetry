@@ -16,7 +16,8 @@ ENV PYTHONUNBUFFERED=1 \
     # https://python-poetry.org/docs/configuration/#using-environment-variables
     POETRY_VERSION=1.0.3 \
     # make poetry install to this location (commented since doesn't work when installing via pip)
-    POETRY_HOME="/opt/poetry" \
+    PIPX_HOME="/opt/pipx" \
+    PIPX_BIN_DIR="/usr/local/bin" \
     # make poetry create the virtual environment in the project's root
     # it gets named `.venv`
     POETRY_VIRTUALENVS_IN_PROJECT=true \
@@ -29,8 +30,8 @@ ENV PYTHONUNBUFFERED=1 \
     VENV_PATH="/opt/pysetup/.venv"
 
 
-# prepend poetry and venv to path
-ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
+# prepend venv to path
+ENV PATH="$VENV_PATH/bin:$PATH"
 
 
 # `builder-base` stage is used to build deps + create our virtual environment
@@ -42,10 +43,8 @@ RUN apt update \
         git \
         build-essential
 
-# install poetry - respects $POETRY_VERSION & $POETRY_HOME
-RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
-# workaround for "ModuleNotFoundError: No module named 'cleo'" on py3.9
-RUN ln -s $POETRY_HOME/lib/poetry/_vendor/py3.8 $POETRY_HOME/lib/poetry/_vendor/py3.9
+RUN pip install pipx-in-pipx
+RUN pipx install poetry
 
 # copy project requirement files here to ensure they will be cached.
 WORKDIR $PYSETUP_PATH
