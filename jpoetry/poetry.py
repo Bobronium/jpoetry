@@ -145,7 +145,7 @@ class Phrase:
 class Poem:
     genre: Genre
     phrases: list[Phrase]
-    has_issues: bool
+    issues: list[Issue]
 
     def __str__(self) -> str:
         return "\n".join(map(str, self.phrases))
@@ -164,33 +164,39 @@ def detect_poem(
     if not MIN_WORDS <= len(words) <= MAX_WORDS:
         return None, None, None
 
-    try:
-        words_info, total_syllables = get_words_info(words)
-    except ValueError:
-        return None, None, None
+    words_info, total_syllables = get_words_info(words)
 
+    detected_poem: Poem | None = None
     for poem_info in POEMS_INFO_MAP.get(total_syllables, []):
-        phrases, ok = compose_phrases(
-            words_info.copy(), poem_info.syllables, strict=strict
-        )
-        return (
-            Poem(poem_info.genre, phrases, has_issues=not ok),
-            words_info,
-            total_syllables,
-        )
+        try:
+            phrases, issues = compose_phrases(
+                words_info.copy(), poem_info.syllables, strict=strict
+            )
+        except BadPhraseError:
+            continue
 
-    return None, words_info, total_syllables
+        if not issues:
+            return (
+                Poem(poem_info.genre, phrases, issues=issues),
+                words_info,
+                total_syllables,
+            )
+        else:
+            if detected_poem is None or len(detected_poem.issues) > len(issues):
+                detected_poem = Poem(poem_info.genre, phrases, issues=issues)
+    
+    return detect_poem, words_info, total_syllables
 
 
 def compose_phrases(
     words_info: list[WordInfo], poem_syllables: tuple[int, ...], strict: bool = True
-) -> tuple[list[Phrase], bool]:
+) -> tuple[list[Phrase], list[Issue]]:
     """
     Compose phrases from list of words, and their syllables to a poem figure
     """
     phrases: list[Phrase] = []
     final_line = len(poem_syllables) - 1
-    ok = True
+    issues = []
     for i, needed_syllables in enumerate(poem_syllables):
         phrase = Phrase(position=(i, final_line), expected_syllables=needed_syllables)
         while words_info and phrase.syllables < needed_syllables:
@@ -199,7 +205,7 @@ def compose_phrases(
         if phrase.issues:
             if strict:
                 raise BadPhraseError(repr(phrase))
-            ok = False
+            issues.extend(phrase.issues)
         phrases.append(phrase)
 
-    return phrases, ok
+    return phrases, issues
