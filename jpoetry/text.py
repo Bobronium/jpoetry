@@ -1,4 +1,5 @@
 from cmath import inf
+from logging import raiseExceptions
 import string
 from contextlib import suppress
 from typing import NamedTuple
@@ -238,10 +239,21 @@ def count_word_syllables(word: str) -> int:
     if current_number:
         number_syllables += count_word_syllables(spell_number(current_number))
 
-    if word.endswith("e"):
+    if word.endswith("e") and (len(word) > 3 or word[0] in LATIN_VOWELS):
         syllables -= 1
+    if word.endswith("ia") and word_length > 2:
+        syllables += 1
     if word.endswith("le") and word_length > 2 and word[-3] not in LATIN_VOWELS:
         syllables += 1
+    if (ounce := word.find("ounce")) != -1:
+        try:
+            letter_after_ounce = word[ounce + 5]
+            next_letter_after_ounce = word[ounce + 6]
+        except IndexError:
+            pass
+        else:
+            if letter_after_ounce not in LATIN_VOWELS and next_letter_after_ounce in LATIN_VOWELS:
+                syllables -= 1
 
     if not syllables and set(word) & ASCII:
         # TODO: check abbr tag in parsed word
@@ -268,3 +280,5 @@ def agree_with_number(word: str, number: int) -> str:
         return parse_word(word).make_agree_with_number(number).word
     except (ParseError, AttributeError):
         return word
+
+count_word_syllables("die")

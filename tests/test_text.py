@@ -65,7 +65,7 @@ def test_quantitative_to_numeral_error(mocker):
         ('1:1 100 000', 'один к миллиону ста тысячам'),
     ),
 )
-def test_number_to_text(number, text):
+def test_spell_number(number, text):
     assert spell_number(number) == text
 
 
@@ -76,6 +76,21 @@ def test_number_to_text(number, text):
         ('яяяяяя', 6, None),  # count every vowel as syllable
         ('iiiiii', 2, None),  # first vowel always adds one syllable
         ('sponge', 1, None),  # 'e' at the end must not add syllable
+        ('the', 1, None),
+        ('the', 1, None),
+        ('ape', 1, None),
+        ('die', 1, None),
+        ('announcement', 3, None),
+        ("pronouncement", 3, None),
+        ("pronounceable", 4, None),
+        ("renouncements", 3, None),
+        ("denouncements", 3, None),
+        ("announcements", 3, None),
+        ("mispronounced", 4, None),
+        ('course', 1, None),
+        ('bounce', 1, None),
+        ("announced", 3, None),
+        ('columbia', 4, None),
         ('available', 4, None),  # however, 'le' counts
         ('в', 0, None),
         ('d', 1, None),
@@ -89,7 +104,7 @@ def test_number_to_text(number, text):
     ),
 )
 def test_count_word_syllables(word, expected_syllables, mocker, number):
-    spy = mocker.spy(jpoetry.text, 'number_to_text')
+    spy = mocker.spy(jpoetry.text, 'spell_number')
     assert count_word_syllables(word) == expected_syllables
     assert spy.mock_calls == [] if number is None else [mocker.call(number)]
 
