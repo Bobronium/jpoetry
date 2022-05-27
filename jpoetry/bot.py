@@ -5,7 +5,17 @@ from io import BytesIO
 from pathlib import Path
 
 from aiogram import Bot, Dispatcher
-from aiogram.types import ContentType, InputFile, Message, ParseMode, Update
+from aiogram.types import (
+    ContentType,
+    InlineQuery,
+    InlineQueryResult,
+    InlineQueryResultArticle,
+    InputFile,
+    InputMessageContent,
+    Message,
+    ParseMode,
+    Update,
+)
 from aiogram.utils.markdown import escape_md
 from loguru import logger
 
@@ -117,6 +127,45 @@ async def detect_and_send_poem(message: Message) -> None:
         image = InputFile(image_data, filename=f"{author} — {poem.genre}.png")
 
     await bot.send_photo(message.chat.id, image, reply_to_message_id=message.message_id)
+
+
+@dp.inline_handler()
+async def answer_inline_query(query: InlineQuery) -> None:
+    text = query.query
+    if not text:
+        await query.answer(
+            results=[],
+            switch_pm_text="Не ссы, пиши давай",
+            switch_pm_parameter='ok',
+            cache_time=0,
+        )
+
+    poem, words_info, total_syllables = detect_poem(text, strict=False)
+    if words_info is None or total_syllables is None:
+        await query.answer(
+            results=[],
+            switch_pm_text=escape_md("Ну хуй знает..."),
+            switch_pm_parameter='ok',
+            cache_time=0,
+        )
+        return
+    if poem is not None:
+        info = message_text = repr(poem)
+    else:
+        words = " ".join(map(repr, words_info))
+        info = message_text = f"{total_syllables}: " + words
+        if len(message_text) > 30:
+            info = f"{total_syllables}: " + f'{words[:10]}...{words[-17:]}'
+
+    await query.answer(
+        results=[
+            InlineQueryResultArticle(
+                id=1,
+                title=info,
+                input_message_content=InputMessageContent(message_text=message_text),
+            )
+        ]
+    )
 
 
 def get_poem_image(poem: Poem, author: str) -> BytesIO:
