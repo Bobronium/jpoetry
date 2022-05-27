@@ -144,7 +144,7 @@ async def answer_inline_query(query: InlineQuery) -> None:
     if words_info is None or total_syllables is None:
         await query.answer(
             results=[],
-            switch_pm_text=escape_md("Ну хуй знает..."),
+            switch_pm_text="Ну хуй знает...",
             switch_pm_parameter='ok',
             cache_time=0,
         )
