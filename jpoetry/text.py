@@ -132,6 +132,9 @@ def spell_number(decimal: str, inflect: str = None) -> str:
         elif char == ":":
             second_part = f' к {spell_number(decimal[i + 1:], inflect="datv")}'
             break
+        elif char == "-":
+            second_part = f' {spell_number(decimal[i + 1:])}'
+            break
         elif any(char.isdecimal() for char in decimal[i:]):
             raise BadNumberError(f"Unable to parse number {decimal}")
         elif (ending := decimal[i:]).startswith(
