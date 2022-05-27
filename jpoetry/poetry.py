@@ -185,7 +185,7 @@ def detect_poem(
             if detected_poem is None or len(detected_poem.issues) > len(issues):
                 detected_poem = Poem(poem_info.genre, phrases, issues=issues)
     
-    return detect_poem, words_info, total_syllables
+    return detected_poem, words_info, total_syllables
 
 
 def compose_phrases(
