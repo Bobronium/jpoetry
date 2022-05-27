@@ -68,7 +68,7 @@ class Issue(str):
 
 
 TOO_MANY_SYLLABLES = Issue("Too many syllables")
-NOT_ENOUGH_SYLLABLES = Issue("Too many syllables")
+NOT_ENOUGH_SYLLABLES = Issue("Not enough syllables")
 
 
 @dataclass
@@ -134,7 +134,7 @@ class Phrase:
                 else f" ({self.expected_syllables})"
             ).translate(SUPERSCRIPT_NUMBERS_TRANSLATOR)
             + (
-                textwrap.indent("Issues:\n" + "\n".join(self.issues), "\t")
+                textwrap.indent("\nIssues:\n" + "\n".join(self.issues), "\t")
                 if self.issues
                 else ""
             )
