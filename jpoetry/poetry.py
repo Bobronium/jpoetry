@@ -181,10 +181,12 @@ def detect_poem(
                 words_info,
                 total_syllables,
             )
+        elif strict:
+            return None, words_info, total_syllables
         else:
             if detected_poem is None or len(detected_poem.issues) > len(issues):
                 detected_poem = Poem(poem_info.genre, phrases, issues=issues)
-    
+
     return detected_poem, words_info, total_syllables
 
 
