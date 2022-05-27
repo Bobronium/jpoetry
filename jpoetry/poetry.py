@@ -134,7 +134,7 @@ class Phrase:
                 else f" ({self.expected_syllables})"
             ).translate(SUPERSCRIPT_NUMBERS_TRANSLATOR)
             + (
-                textwrap.indent("\nIssues:\n" + "\n".join(self.issues), "\t")
+                textwrap.indent("\n^" + "\n".join(self.issues), "\t")
                 if self.issues
                 else ""
             )
