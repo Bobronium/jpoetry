@@ -160,10 +160,12 @@ async def answer_inline_query(query: InlineQuery) -> None:
     await query.answer(
         results=[
             InlineQueryResultArticle(
-                id=1,
-                title=info,
+                id=i,
+                title=line,
                 input_message_content=InputMessageContent(message_text=message_text),
             )
+            for i, line in enumerate(info.split('\n'))
+            if line.strip()
         ]
     )
 
