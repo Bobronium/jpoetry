@@ -38,7 +38,7 @@ class InverseMapping(Mapping[KT, T]):
     def __iter__(self) -> Iterator[KT]:
         yield from self._keys
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self._keys}, {self._value})'
 
 

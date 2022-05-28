@@ -13,7 +13,7 @@ from jpoetry.text import (
 
 
 # remove all unsuitable chars from words in the middle of lines
-NON_FINAL_WORD_TRANSLATE_MAP = dict.fromkeys(map(ord, ".!?"), "")
+NON_FINAL_CHARS = ".!?"
 NON_FINAL_WORDS: set[str] = {"в", "на", "из-под", "под", "или", "по", "над"}
 
 
@@ -69,6 +69,7 @@ class Issue(str):
 
 TOO_MANY_SYLLABLES = Issue("Too many syllables")
 NOT_ENOUGH_SYLLABLES = Issue("Not enough syllables")
+PHRASE_CONTAINS_UNMATCHED_QUOTE = Issue("Phrase contains unmatched quote")
 
 
 @dataclass
@@ -78,6 +79,9 @@ class Phrase:
     words: list[WordInfo] = field(default_factory=list)
     issues: set[Issue] = field(default_factory=lambda: {NOT_ENOUGH_SYLLABLES})
     syllables: int = 0
+
+    _open_quotes = 0
+    _close_quotes = 0
 
     def __len__(self) -> int:
         return len(self.words)
@@ -94,6 +98,8 @@ class Phrase:
         self.words.append(
             WordInfo(self.normalize_word(word_info.word, final), word_info.syllables)
         )
+        if self._open_quotes != self._close_quotes:
+            self.issues.add(PHRASE_CONTAINS_UNMATCHED_QUOTE)
 
     def normalize_word(self, word: str, final: bool) -> str:
         """
@@ -101,8 +107,8 @@ class Phrase:
         Allow punctuation marks only after last words in phrase
         """
         # make text nicer by removing misused quotes
-        if word.startswith(("«", '"', "'")) != word.endswith(("'", '"', "»")):
-            word = word.strip('«»"' + "'")
+        self._open_quotes += word.startswith(("«", '"', "'"))
+        self._close_quotes += word.endswith(("'", '"', "»"))
 
         word_without_unknown_chars = word.translate(UNKNOWN_CHAR_TRANSLATOR)
         if word_without_unknown_chars not in word:
@@ -115,9 +121,10 @@ class Phrase:
         word = word_without_unknown_chars
 
         if not final:
-            word = word.translate(NON_FINAL_WORD_TRANSLATE_MAP)
+            if word != word.strip(NON_FINAL_CHARS):
+                self.issues.add(Issue(f"Phrase contains forbidden punctuation: {word!r}"))
         elif word in NON_FINAL_WORDS and self.position[1] - self.position[0] != 1:
-            self.issues.add(Issue(f"Phrase ends with a forbidden word: {word}"))
+            self.issues.add(Issue(f"Phrase ends with a forbidden word: {word!r}"))
 
         return word.lower()
 
