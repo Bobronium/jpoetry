@@ -1,15 +1,11 @@
-from cmath import inf
-from logging import raiseExceptions
 import string
-from contextlib import suppress
-from typing import NamedTuple
 
 import pytils
 from pymorphy2 import MorphAnalyzer
 from pymorphy2.analyzer import Parse
 
 from jpoetry.config import KNOWN_GLYPHS
-from jpoetry.utils import InverseMapping
+from jpoetry.textpy import BadNumberError, ParseError, WordInfo
 
 
 morph = MorphAnalyzer()
@@ -17,7 +13,6 @@ morph = MorphAnalyzer()
 LATIN_VOWELS: set[str] = {"a", "e", "i", "o", "u", "y"}
 CYRILLIC_VOWELS: set[str] = {"а", "е", "ё", "и", "о", "у", "ы", "э", "ю", "я"}
 # remove unknown characters
-UNKNOWN_CHAR_TRANSLATOR: InverseMapping[int, str] = InverseMapping(KNOWN_GLYPHS, "")
 ASCII = set(string.ascii_letters)
 SUPERSCRIPT_NUMBERS_TRANSLATOR = {
     ord(number): superscript for number, superscript in zip("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
@@ -25,7 +20,7 @@ SUPERSCRIPT_NUMBERS_TRANSLATOR = {
 
 
 def remove_unsupported_chars(text: str) -> str:
-    return text.translate(UNKNOWN_CHAR_TRANSLATOR).strip()
+    return "".join([c for c in text if c in KNOWN_GLYPHS])
 
 
 def parse_word(word: str) -> Parse:
@@ -35,7 +30,7 @@ def parse_word(word: str) -> Parse:
         raise ParseError("Unable to parse word")
 
 
-QUANTITATIVE_TO_NUMERALS: dict[str, Parse] = {
+QUANTITATIVE_TO_NUMERAL: dict[str, Parse] = {
     k: parse_word(v)
     for k, v in {
         "один": "первый",
@@ -81,31 +76,15 @@ QUANTITATIVE_TO_NUMERALS: dict[str, Parse] = {
 }
 
 
-class WordInfo(NamedTuple):
-    word: str
-    syllables: int
-
-    def __str__(self) -> str:
-        return self.word
-
-    def __repr__(self) -> str:
-        return f"{self.word}{str(self.syllables).translate(SUPERSCRIPT_NUMBERS_TRANSLATOR)}"
-
-
-class BadNumberError(ValueError):
-    ...
-
-
-class ParseError(ValueError):
-    ...
-
-
 def quantitative_to_numeral(number: str) -> Parse:
-    if number in QUANTITATIVE_TO_NUMERALS:
-        return QUANTITATIVE_TO_NUMERALS[number]
+    if number in QUANTITATIVE_TO_NUMERAL:
+        return QUANTITATIVE_TO_NUMERAL[number]
 
-    with suppress(ParseError):
+    try:
         parsed_number = parse_word(number + "ный")
+    except ParseError:
+        pass
+    else:
         if "Anum" in parsed_number.tag:
             return parsed_number.word
 
@@ -201,6 +180,7 @@ def spell_number(decimal: str, inflect: str = None) -> str:
             f"Unable to find suitable lexeme for {number_in_words=} with {ending=}"
         )
     if is_numeral and not first_decimal % 10 and len(words) > 1:
+        # 10 000-й -> десятитысчный
         return (
             "".join(parse_word(number).inflect({"gent"}).word for number in words[:-1])
             + words[-1]
@@ -238,20 +218,43 @@ def count_word_syllables(word: str) -> int:
         if char in CYRILLIC_VOWELS:
             syllables += 1
         elif char in LATIN_VOWELS:
-            if i == 0:
+            if i == last_char_index:
                 syllables += 1
-            elif i == last_char_index or word[i + 1] not in LATIN_VOWELS:
+            elif (next_char := word[i + 1]) not in LATIN_VOWELS:
                 syllables += 1
+            # elif (char, next_char) in {('u', 'a')}: #('i', 'e'), ('e', 'a'), ('i', 'o')}:
+            # syllables += 1
 
     if current_number:
         number_syllables += count_word_syllables(spell_number(current_number))
 
-    if word.endswith("e") and (len(word) > 3 or word[0] in LATIN_VOWELS):
+    if word.endswith('pean'):
+        syllables += 1
+    elif (
+        word.endswith("e")
+        and syllables > 1
+        and (len(word) > 3 or set(word) - LATIN_VOWELS)
+    ):
         syllables -= 1
-    if word.endswith("ia") and word_length > 2:
+        if word.endswith("le") and word_length > 2 and word[-3] not in LATIN_VOWELS:
+            syllables += 1
+    elif word.endswith("ia") and word_length > 2:
         syllables += 1
-    if word.endswith("le") and word_length > 2 and word[-3] not in LATIN_VOWELS:
-        syllables += 1
+    elif (
+        word.endswith("ed")
+        and not word.endswith(("ted", "ded", "eed", "ied", "ued"))
+        and (not word.endswith(("bled", "ized", "tled", "ciled", "nced")))
+        and syllables > 1
+        and word_length > 2
+    ):
+        syllables -= 1
+    elif (
+        word.endswith("es")
+        and word[-3] not in LATIN_VOWELS
+        and word[-4] in LATIN_VOWELS
+    ):
+        syllables -= 1
+
     if (ounce := word.find("ounce")) != -1:
         try:
             letter_after_ounce = word[ounce + 5]
@@ -259,7 +262,10 @@ def count_word_syllables(word: str) -> int:
         except IndexError:
             pass
         else:
-            if letter_after_ounce not in LATIN_VOWELS and next_letter_after_ounce in LATIN_VOWELS:
+            if (
+                letter_after_ounce not in LATIN_VOWELS
+                and next_letter_after_ounce in LATIN_VOWELS
+            ):
                 syllables -= 1
 
     if not syllables and set(word) & ASCII:
@@ -288,4 +294,5 @@ def agree_with_number(word: str, number: int) -> str:
     except (ParseError, AttributeError):
         return word
 
-count_word_syllables("die")
+
+count_word_syllables('european')

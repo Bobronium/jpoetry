@@ -7,7 +7,13 @@ from pytest_mock import MockerFixture
 from jpoetry import bot as bot_module
 from jpoetry.answers import HELP_TEXT, WELCOME_TEXT
 from jpoetry.config import DEFAULT_AUTHOR, TOO_LONG_MESSAGE_FILE
-from jpoetry.bot import bot, detect_and_send_poem, get_author, send_cheat_sheet, welcome_user
+from jpoetry.bot import (
+    bot,
+    detect_and_send_poem,
+    get_author,
+    send_cheat_sheet,
+    welcome_user,
+)
 from jpoetry.image import TooLongTextError
 from jpoetry.poetry import detect_poem
 
@@ -43,7 +49,9 @@ def get_message(mocker):
             )
         else:
             message.forward_from = None
-        message.is_forward = lambda: bool(message.forward_from or message.forward_sender_name)
+        message.is_forward = lambda: bool(
+            message.forward_from or message.forward_sender_name
+        )
 
         return message
 
@@ -80,7 +88,9 @@ def test_get_author_ordinal(full_name, username, result, get_message):
         (None, None, '𝔓𝔢𝔫𝔤𝔲𝔦𝔫', DEFAULT_AUTHOR),
     ),
 )
-def test_get_author_forward(fwd_full_name, fwd_username, fwd_sender_name, result, get_message):
+def test_get_author_forward(
+    fwd_full_name, fwd_username, fwd_sender_name, result, get_message
+):
     message = get_message(
         username='test_username',
         full_name='test_full_name',
@@ -103,9 +113,13 @@ async def test_send_cheat_sheet(get_message, call):
     assert message.reply.mock_calls == [call(HELP_TEXT)]
 
 
-async def test_detect_and_send_poem_positive(get_message, mocker: MockerFixture, call, hokku_text):
+async def test_detect_and_send_poem_positive(
+    get_message, mocker: MockerFixture, call, hokku_text
+):
     message = get_message(hokku_text)
-    detect_poem_mock = mocker.patch.object(bot_module, 'detect_poem', Mock(return_value=detect_poem(hokku_text)))
+    detect_poem_mock = mocker.patch.object(
+        bot_module, 'detect_poem', Mock(return_value=detect_poem(hokku_text))
+    )
 
     create_poem_image_mock = mocker.patch.object(bot_module, 'get_poem_image')
     input_file_mock = mocker.patch.object(bot_module, 'InputFile')
@@ -114,16 +128,24 @@ async def test_detect_and_send_poem_positive(get_message, mocker: MockerFixture,
     await detect_and_send_poem(message)
     assert message.reply.mock_calls == []
     assert detect_poem_mock.mock_calls == [call(hokku_text)]
-    assert create_poem_image_mock.mock_calls == [call(detect_poem_mock.return_value, 'test')]
+    assert create_poem_image_mock.mock_calls == [
+        call(detect_poem_mock.return_value[0], 'test')
+    ]
     assert input_file_mock.mock_calls == [
         call(create_poem_image_mock.return_value, filename='test — Хокку.png')
     ]
     assert send_message_mock.mock_calls == [
-        call(message.chat.id, input_file_mock.return_value, reply_to_message_id=message.message_id)
+        call(
+            message.chat.id,
+            input_file_mock.return_value,
+            reply_to_message_id=message.message_id,
+        )
     ]
 
 
-async def test_detect_and_send_poem_too_long(get_message, mocker: MockerFixture, call, hokku_text):
+async def test_detect_and_send_poem_too_long(
+    get_message, mocker: MockerFixture, call, hokku_text
+):
     message = get_message(hokku_text)
     detect_poem_mock = mocker.patch.object(
         bot_module, 'detect_poem', return_value=detect_poem(hokku_text)
@@ -136,9 +158,15 @@ async def test_detect_and_send_poem_too_long(get_message, mocker: MockerFixture,
     await detect_and_send_poem(message)
     assert message.reply.mock_calls == []
     assert detect_poem_mock.mock_calls == [call(hokku_text)]
-    assert create_poem_image_mock.mock_calls == [call(detect_poem_mock.return_value, 'test')]
+    assert create_poem_image_mock.mock_calls == [
+        call(detect_poem_mock.return_value[0], 'test')
+    ]
     assert send_message_mock.mock_calls == [
-        call(message.chat.id, TOO_LONG_MESSAGE_FILE, reply_to_message_id=message.message_id)
+        call(
+            message.chat.id,
+            TOO_LONG_MESSAGE_FILE,
+            reply_to_message_id=message.message_id,
+        )
     ]
 
 

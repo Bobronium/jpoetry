@@ -3,12 +3,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import NamedTuple
 
-
 from jpoetry.text import (
     SUPERSCRIPT_NUMBERS_TRANSLATOR,
-    UNKNOWN_CHAR_TRANSLATOR,
     WordInfo,
     get_words_info,
+    remove_unsupported_chars,
 )
 
 
@@ -95,10 +94,14 @@ class Phrase:
             self.issues.discard(NOT_ENOUGH_SYLLABLES)
             final = True
 
+        normalized_word = self.normalize_word(word_info.word, final)
+        if not normalized_word:
+            return
+
         self.words.append(
-            WordInfo(self.normalize_word(word_info.word, final), word_info.syllables)
+            WordInfo(normalized_word, word_info.syllables)
         )
-        if self._open_quotes != self._close_quotes:
+        if self._open_quotes != self._close_quotes and final:
             self.issues.add(PHRASE_CONTAINS_UNMATCHED_QUOTE)
 
     def normalize_word(self, word: str, final: bool) -> str:
@@ -108,9 +111,9 @@ class Phrase:
         """
         # make text nicer by removing misused quotes
         self._open_quotes += word.startswith(("«", '"', "'"))
-        self._close_quotes += word.endswith(("'", '"', "»"))
+        self._close_quotes += word.endswith(("»", '"', "'"))
 
-        word_without_unknown_chars = word.translate(UNKNOWN_CHAR_TRANSLATOR)
+        word_without_unknown_chars = remove_unsupported_chars(word)
         if word_without_unknown_chars not in word:
             self.issues.add(
                 Issue(
@@ -120,13 +123,16 @@ class Phrase:
 
         word = word_without_unknown_chars
 
-        if not final:
+        # don't want any sentence ending punctuation in one phrase
+        # unless, it's in quotes.
+        if not final and self._open_quotes <= self._close_quotes:
             if word != word.strip(NON_FINAL_CHARS):
-                self.issues.add(Issue(f"Phrase contains forbidden punctuation: {word!r}"))
+                self.issues.add(
+                    Issue(f"Phrase contains forbidden punctuation: {word!r}")
+                )
         elif word in NON_FINAL_WORDS and self.position[1] - self.position[0] != 1:
             self.issues.add(Issue(f"Phrase ends with a forbidden word: {word!r}"))
-
-        return word.lower()
+        return word.lower().strip()
 
     def __str__(self) -> str:
         return " ".join(map(str, self.words))
