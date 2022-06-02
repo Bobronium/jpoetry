@@ -12,7 +12,7 @@ TOO_LONG_MESSAGE_FILE = (
 
 RESOURCES = Path(__file__).parent.parent / "resources"
 FONT = str(RESOURCES / "HanZi.ttf")
-KNOWN_GLYPHS = {char for table in TTFont(FONT)["cmap"].tables for char in table.cmap}
+KNOWN_GLYPHS = {chr(ordinal) for table in TTFont(FONT)["cmap"].tables for ordinal in table.cmap}
 BASE_COLOR = (94, 8, 8)  # dark
 ACCENT_COLOR = (135, 15, 15)  # dark with red tint
 

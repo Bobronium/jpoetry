@@ -2,22 +2,27 @@ from dataclasses import asdict
 
 import pytest
 
-from jpoetry.poetry import Genre, detect_poem, normalize_phrase
+from jpoetry.poetry import Genre, Issue, Phrase, detect_poem
+from jpoetry.textpy import WordInfo
 
 
 @pytest.mark.parametrize(
-    'inp,out',
+    'inp,changed',
     (
-        ('Hey! How are you?', 'hey how are you?'),
+        ('Hey! How are you?', 'hey! how are you?'),
         ("I'm great!", "i'm great!"),
-        ("'WOW!' — said the guy,", "'wow' — said the guy,"),
-        ('"This is a quote"', "this is a quote"),
+        ("'WOW!' — said the guy,", "'wow!' — said the guy,"),
+        ('"This is a quote"', '"this is a quote"'),
         ("∂ßƒ∂", "ßƒ"),
-        pytest.param("ß∂∂ƒ", "ßƒ", marks=pytest.mark.xfail(reason="Word changed too much")),
+        ("🤷🏻‍♀ не уверена что это оптимально по ряду причин.", "не уверена что это оптимально по ряду причин."),
+        pytest.param("ß∂∂ƒ", "ßƒ"),
     ),
 )
-def test_normalize_phrase(inp, out):
-    assert list(normalize_phrase(inp.split())) == out.split()
+def test_normalize_phrase(inp, changed):
+    phrase = Phrase([0, 0], 0)
+    for word in inp.split():
+        phrase.add_word(WordInfo(word, 0))
+    assert str(phrase) == changed
 
 
 @pytest.mark.parametrize(
@@ -31,12 +36,22 @@ def test_normalize_phrase(inp, out):
     ),
 )
 def test_detect_poem_positive(genre, text, expected_phrases):
-    poem = detect_poem(text)
+    poem, _, _ = detect_poem(text)
     assert poem.genre is genre
     assert str(poem.genre) == genre == genre.value
-    assert poem.phrases == expected_phrases
-    assert str(poem) == '\n'.join(poem.phrases)
-    assert repr(poem) == repr(asdict(poem))
+    assert list(map(str, poem.phrases)) == list(map(str, expected_phrases))
+    assert str(poem) == '\n'.join(map(str, poem.phrases))
+    print(repr(poem))
+    assert (
+        repr(poem)
+        == """\
+Хокку
+
+1/3. я¹ вспомнил² видос,² (⁵)
+2/3. где¹ у¹ мужика³ банка² (⁷)
+3/3. в⁰ жепе² лопнула..³ (⁵)\
+"""
+    )
 
 
 @pytest.mark.parametrize(
@@ -55,4 +70,4 @@ def test_detect_poem_positive(genre, text, expected_phrases):
     ),
 )
 def test_detect_poem_negative(text):
-    assert detect_poem(text) is None
+    assert detect_poem(text)[0] is None

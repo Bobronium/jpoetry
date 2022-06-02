@@ -1,9 +1,10 @@
+from pathlib import Path
 import pytest
 
 import jpoetry
 from jpoetry import text
 from jpoetry.text import (
-    QUANTITATIVE_TO_NUMERALS,
+    QUANTITATIVE_TO_NUMERAL,
     BadNumberError,
     ParseError,
     WordInfo,
@@ -20,7 +21,7 @@ from jpoetry.text import (
 @pytest.mark.parametrize(
     'quantitative, numeral',
     (
-        *tuple(QUANTITATIVE_TO_NUMERALS.items()),
+        *tuple(QUANTITATIVE_TO_NUMERAL.items()),
         ('миллиард', 'миллиардный'),
     ),
 )
@@ -74,12 +75,14 @@ def test_spell_number(number, text):
     (
         ('молоко', 3, None),
         ('яяяяяя', 6, None),  # count every vowel as syllable
-        ('iiiiii', 2, None),  # first vowel always adds one syllable
         ('sponge', 1, None),  # 'e' at the end must not add syllable
         ('the', 1, None),
         ('the', 1, None),
         ('ape', 1, None),
         ('die', 1, None),
+        ("escapes", 2, None),
+        pytest.param("creates", 2, None, marks=pytest.mark.xfail),
+        ("yeah", 1, None),
         ('announcement', 3, None),
         ("pronouncement", 3, None),
         ("pronounceable", 4, None),
@@ -149,4 +152,6 @@ def test_agree_with_number(word, number, result):
 
 def test_agree_with_number_error(mocker):
     mocker.patch.object(text, 'parse_word', side_effect=ParseError)
-    assert agree_with_number('ох ну и как это парсить?', 5) == 'ох ну и как это парсить?'
+    assert (
+        agree_with_number('ох ну и как это парсить?', 5) == 'ох ну и как это парсить?'
+    )

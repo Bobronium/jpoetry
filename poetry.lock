@@ -173,6 +173,14 @@ tomli = {version = "*", optional = true, markers = "python_version < \"3.11\" an
 toml = ["tomli"]
 
 [[package]]
+name = "dawg-patched"
+version = "0.9.1"
+description = "Fast and memory efficient DAWG (DAFSA) for Python"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "dawg-python"
 version = "0.7.2"
 description = "Pure-python reader for DAWGs (DAFSAs) created by dawgdic C++ library or DAWG Python extension."
@@ -645,7 +653,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "e3ae40c46256cd5ecb35bb4911bc5e8e051e93fc0f35696dbf1adcaee3395e76"
+content-hash = "fbb0b591efce1216edb9e0c06109765f6c92a9112c2d0bb57ba75ebb816be1b1"
 
 [metadata.files]
 aiogram = [
@@ -833,6 +841,9 @@ coverage = [
     {file = "coverage-6.4-cp39-cp39-win_amd64.whl", hash = "sha256:e35217031e4b534b09f9b9a5841b9344a30a6357627761d4218818b865d45055"},
     {file = "coverage-6.4-pp36.pp37.pp38-none-any.whl", hash = "sha256:e637ae0b7b481905358624ef2e81d7fb0b1af55f5ff99f9ba05442a444b11e45"},
     {file = "coverage-6.4.tar.gz", hash = "sha256:727dafd7f67a6e1cad808dc884bd9c5a2f6ef1f8f6d2f22b37b96cb0080d4f49"},
+]
+dawg-patched = [
+    {file = "DAWG-Patched-0.9.1.tar.gz", hash = "sha256:954e990044322b8dd17a6c44e38d8ab17930e93a2c53a55898d8cf71a0ab96a4"},
 ]
 dawg-python = [
     {file = "DAWG-Python-0.7.2.tar.gz", hash = "sha256:4a5e3286e6261cca02f205cfd5516a7ab10190fa30c51c28d345808f595e3421"},
