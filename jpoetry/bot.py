@@ -1,8 +1,11 @@
 import asyncio
+from bisect import bisect_left
+from datetime import datetime
 import logging
 import sys
 from io import BytesIO
 from pathlib import Path
+from this import d
 
 from aiogram import Bot, Dispatcher
 from aiogram.types import (
@@ -25,7 +28,7 @@ from jpoetry.image import TooLongTextError, draw_text
 from jpoetry.poetry import Poem, detect_poem
 from jpoetry.templates import POETRY_IMAGES_INFO
 from jpoetry.text import remove_unsupported_chars
-from jpoetry.utils import Timer
+from jpoetry.utils import TimeAwareCounter, Timer
 
 
 class InterceptHandler(logging.Handler):
@@ -44,6 +47,15 @@ logger.add(sys.stderr, level="DEBUG")
 # Initialize bot and dispatcher
 bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.MARKDOWN_V2, validate_token=False)
 dp = Dispatcher(bot)
+
+# HACK I don't want to do proper monitoring, just want to know how many people are using the bot
+# Ugly global shit. I know. And I don't care ✨
+one_day = 60 * 60 * 24
+PEOPLE = TimeAwareCounter[int](one_day, "people")
+GROUPS = TimeAwareCounter[int](one_day, "groups")
+MESSAGES_HANDLED_FOR_LAST_24_HOURS = TimeAwareCounter(one_day, "messages")
+POEMS_GENERATED_FOR_LAST_24_HOURS = TimeAwareCounter(one_day, "poems")
+INLINE_REQUESTS_FOR_LAST_24_HOURS = TimeAwareCounter(one_day, "inline")
 
 
 def get_author(message: Message, max_len: int = 40) -> str:
@@ -81,7 +93,6 @@ async def send_cheat_sheet(message: Message) -> None:
 
 @dp.message_handler(commands=["info"])
 async def print_info(message: Message) -> None:
-
     if not (message_to_reply := message.reply_to_message):
         message = await message.reply(escape_md("Пошёл нахуй)"))
         await asyncio.sleep(0.5)
@@ -99,20 +110,50 @@ async def print_info(message: Message) -> None:
         )
 
 
-M = Path(__file__).parent / "messages.json"
+def get_interval(seconds):
+    minutes = seconds // 60
+    if not minutes:
+        return f"{int(seconds)} seconds"
+    hours = minutes // 60
+    if not hours:
+        return f"{int(minutes)} minutes"
+    days = hours // 24
+    if not days:
+        return f"{int(minutes)} hours"
+    return f"{int(days)} days"
+
+
+@dp.message_handler(commands=["stats"])
+async def get_stats(message: Message) -> None:
+    await message.reply(
+        escape_md(
+            f"Generated {POEMS_GENERATED_FOR_LAST_24_HOURS.count()} poems from\n"
+            f"{MESSAGES_HANDLED_FOR_LAST_24_HOURS.count()} messages in\n"
+            f"{GROUPS.count_unique()} groups and\n"
+            f"{PEOPLE.count_unique()} personal dialogs and handled\n"
+            f"{INLINE_REQUESTS_FOR_LAST_24_HOURS.count()} inline requests\n"
+            f"in the last {(MESSAGES_HANDLED_FOR_LAST_24_HOURS.timestamps or 0) and get_interval(datetime.now().timestamp() - MESSAGES_HANDLED_FOR_LAST_24_HOURS.timestamps[0][0])}"
+        )
+    )
 
 
 # @dp.channel_post_handler(content_types=ContentType.ANY)
 # @dp.edited_channel_post_handler(content_types=ContentType.ANY)
-@dp.message_handler(content_types=ContentType.ANY)
 # @dp.edited_message_handler(content_types=ContentType.ANY)
+@dp.message_handler(content_types=ContentType.ANY)
 async def detect_and_send_poem(message: Message) -> None:
+    if message.chat.id == (person_id := message.from_user.id):
+        PEOPLE.add(person_id)
+    else:
+        GROUPS.add(person_id)
+
+    MESSAGES_HANDLED_FOR_LAST_24_HOURS.inc()
     if message.text is None:
         return
     poem, _, _ = detect_poem(message.text)
     if poem is None:
         return
-
+    POEMS_GENERATED_FOR_LAST_24_HOURS.inc()
     author = get_author(message)
     try:
         with Timer("get_poem_image") as timer:
@@ -131,6 +172,7 @@ async def detect_and_send_poem(message: Message) -> None:
 
 @dp.inline_handler()
 async def answer_inline_query(query: InlineQuery) -> None:
+    INLINE_REQUESTS_FOR_LAST_24_HOURS.inc()
     text = query.query
     if not text:
         await query.answer(

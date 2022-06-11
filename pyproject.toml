@@ -20,6 +20,7 @@ loguru = "^0.5.3"
 
 uvloop = "^0.15.2"
 DAWG-Patched = "^0.9.1"
+freezegun = "^1.2.1"
 
 [tool.poetry.dev-dependencies]
 flake8 = "*"
