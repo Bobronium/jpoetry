@@ -1,4 +1,4 @@
-from pyparsing import NamedTuple
+from typing import NamedTuple
 
 
 SUPERSCRIPT_NUMBERS_TRANSLATOR = {
