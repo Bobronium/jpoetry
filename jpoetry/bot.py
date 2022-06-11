@@ -119,7 +119,7 @@ def get_interval(seconds):
         return f"{int(minutes)} minutes"
     days = hours // 24
     if not days:
-        return f"{int(minutes)} hours"
+        return f"{int(hours)} hours"
     return f"{int(days)} days"
 
 
