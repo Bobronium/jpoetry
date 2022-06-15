@@ -16,6 +16,10 @@ class WordInfo(NamedTuple):
     def __repr__(self) -> str:
         return f"{self.word}{str(self.syllables).translate(SUPERSCRIPT_NUMBERS_TRANSLATOR)}"
 
+class LineInfo(NamedTuple):
+    words_info: list[WordInfo]
+    total_syllables: int
+
 
 class BadNumberError(ValueError):
     ...

@@ -5,7 +5,7 @@ from pymorphy2 import MorphAnalyzer
 from pymorphy2.analyzer import Parse
 
 from jpoetry.config import KNOWN_GLYPHS
-from jpoetry.textpy import BadNumberError, ParseError, WordInfo
+from jpoetry.textpy import BadNumberError, ParseError, LineInfo, WordInfo
 
 
 morph = MorphAnalyzer()
@@ -277,7 +277,7 @@ def count_word_syllables(word: str) -> int:
     return syllables + number_syllables
 
 
-def get_words_info(words: list[str]) -> tuple[list[WordInfo], int]:
+def get_words_info(words: list[str]) -> LineInfo:
     total_syllables = 0
     words_info: list[WordInfo] = []
     for word in words:
@@ -285,7 +285,7 @@ def get_words_info(words: list[str]) -> tuple[list[WordInfo], int]:
         total_syllables += syllables
         words_info.append(WordInfo(word, syllables))
 
-    return words_info, total_syllables
+    return LineInfo(words_info, total_syllables)
 
 
 def agree_with_number(word: str, number: int) -> str:

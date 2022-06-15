@@ -2,13 +2,13 @@ from itertools import islice
 
 from aiogram.utils.markdown import bold, escape_md
 
-from jpoetry.poetry import POEMS_INFO_MAP, POETRY_SYLLABLES
+from jpoetry.poetry import POEMS_INFO_MAP, POETRY_PHRASES_SYLLABLES
 from jpoetry.text import agree_with_number
 
 
 def get_known_poem_types() -> str:
-    poem_types = (bold(p) for p in POETRY_SYLLABLES)
-    poem_types_str = ', '.join(islice(poem_types, len(POETRY_SYLLABLES) - 1))
+    poem_types = (bold(p) for p in POETRY_PHRASES_SYLLABLES)
+    poem_types_str = ', '.join(islice(poem_types, len(POETRY_PHRASES_SYLLABLES) - 1))
     poem_types_str += f' и {next(poem_types)}'
     return poem_types_str
 
