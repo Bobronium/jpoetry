@@ -222,7 +222,7 @@ def generate_poems_from_lines(
     """Try to match existing lines to poem figure"""
     for poem_info in poems_info:
         try:
-            yield compose_poem_from_lines(tuple(lines_info), poem_info, strict=strict)
+            yield compose_poem_from_lines(lines_info, poem_info, strict=strict)
         except BadPhraseError:
             continue
 
@@ -263,7 +263,7 @@ def compose_poem_from_words(
 
 
 def compose_poem_from_lines(
-    raw_phrases: tuple[list[WordInfo]], poem_info: PoemInfo, strict: bool = True
+    raw_phrases: list[LineInfo], poem_info: PoemInfo, strict: bool = True
 ) -> Poem:
     """
     Compose phrases from list of words, and their syllables to a poem figure
@@ -274,7 +274,7 @@ def compose_poem_from_lines(
     for phrase_number, (raw_phrase, needed_syllables) in enumerate(zip(raw_phrases, poem_info.syllables)):
         phrase = Phrase(position=(phrase_number, final_line), expected_syllables=needed_syllables)
         
-        for word_info in raw_phrase:
+        for word_info in raw_phrase.words_info:
             phrase.add_word(word_info)
 
         if phrase.issues:
