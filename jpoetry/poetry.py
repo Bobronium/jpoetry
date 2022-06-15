@@ -1,7 +1,7 @@
 import textwrap
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import NamedTuple
+from typing import Generator, Iterator, NamedTuple
 
 from jpoetry.text import (
     SUPERSCRIPT_NUMBERS_TRANSLATOR,
@@ -9,6 +9,7 @@ from jpoetry.text import (
     get_words_info,
     remove_unsupported_chars,
 )
+from jpoetry.textpy import LineInfo
 
 
 # remove all unsuitable chars from words in the middle of lines
@@ -27,7 +28,7 @@ class Genre(str, Enum):
         return self.value
 
 
-POETRY_SYLLABLES = {
+POETRY_PHRASES_SYLLABLES = {
     Genre.katauta: (5, 7, 7),
     Genre.hokku: (5, 7, 5),
     Genre.tanka: (5, 7, 5, 7, 7),
@@ -42,12 +43,25 @@ class PoemInfo(NamedTuple):
 
 
 POEMS_INFO_MAP: dict[int, list[PoemInfo]] = {}
+NUMBER_OF_PHRASES_TO_POEMS_INFO: dict[int, list[PoemInfo]] = {}
 
-# create poems info, so we can look up poems by total number of syllables
+# create poems info, so we can look up poems by total number of syllables or paragraphs
 # sorting it here just for prettier output later
-for _genre, _syllables in sorted(POETRY_SYLLABLES.items(), key=lambda x: sum(x[1])):
-    POEMS_INFO_MAP.setdefault(sum(_syllables), []).append(PoemInfo(_genre, _syllables))
-del _genre, _syllables
+for _genre, _phrases_syllables in sorted(
+    POETRY_PHRASES_SYLLABLES.items(), key=lambda x: sum(x[1])
+):
+    _poem_info = PoemInfo(_genre, _phrases_syllables)
+    POEMS_INFO_MAP.setdefault(sum(_phrases_syllables), []).append(_poem_info)
+    NUMBER_OF_PHRASES_TO_POEMS_INFO.setdefault(len(_phrases_syllables), []).append(
+        _poem_info
+    )
+
+del (
+    _genre,
+    _phrases_syllables,
+    _poem_info,
+)
+
 
 # need this for fast comparison between total number of words before counting syllables
 MIN_WORDS = len(min(POEMS_INFO_MAP.values(), key=len))
@@ -158,7 +172,7 @@ class Phrase:
 class Poem:
     genre: Genre
     phrases: list[Phrase]
-    issues: list[Issue]
+    total_issues: int
 
     def __str__(self) -> str:
         return "\n".join(map(str, self.phrases))
@@ -167,60 +181,107 @@ class Poem:
         return f"{self.genre}\n\n" + "\n".join(map(repr, self.phrases))
 
 
-def detect_poem(
+def iter_poems(text: str) -> Generator[Poem, None, None]:
+    for poem in detect_poems(text, strict=True)[0]:
+        if not poem.total_issues:
+            yield poem
+
+
+def detect_poems(
     text: str, strict: bool = True
-) -> tuple[Poem | None, list[WordInfo] | None, int | None]:
+) -> tuple[list[Poem], list[LineInfo]]:
     """
     Check if text might be a poem and return one if it is
     """
-    words = text.split()
-    if not MIN_WORDS <= len(words) <= MAX_WORDS:
-        return None, None, None
+    poems = []
+    lines_infos = []
+    for paragraph in text.split('\n\n'):
+        lines = paragraph.split('\n')
+        
+        if len(lines) > 1:
+            poems_info = NUMBER_OF_PHRASES_TO_POEMS_INFO.get(len(lines), [])
+            lines_info = [get_words_info(line.split()) for line in lines]
+            lines_infos.extend(lines_info)
+            poems.extend(generate_poems_from_lines(lines_info, poems_info))
+        else:
+            words = paragraph.split()
+            # quick check
+            if not MIN_WORDS <= len(words) <= MAX_WORDS:
+                if strict:
+                    continue
+            line_info = get_words_info(words)
+            lines_infos.append(line_info)
+            poems_info = POEMS_INFO_MAP.get(line_info.total_syllables, [])
+            poems.extend(generate_poems_from_words(line_info.words_info, poems_info))
+    
+    return poems, lines_infos
 
-    words_info, total_syllables = get_words_info(words)
-
-    detected_poem: Poem | None = None
-    for poem_info in POEMS_INFO_MAP.get(total_syllables, []):
+def generate_poems_from_lines(
+    lines_info: list[LineInfo], poems_info: list[PoemInfo], strict: bool = True
+):
+    """Try to match existing lines to poem figure"""
+    for poem_info in poems_info:
         try:
-            phrases, issues = compose_phrases(
-                words_info.copy(), poem_info.syllables, strict=strict
-            )
+            yield compose_poem_from_lines(tuple(lines_info), poem_info, strict=strict)
         except BadPhraseError:
             continue
 
-        if not issues:
-            return (
-                Poem(poem_info.genre, phrases, issues=issues),
-                words_info,
-                total_syllables,
-            )
-        elif strict:
-            return None, words_info, total_syllables
-        else:
-            if detected_poem is None or len(detected_poem.issues) > len(issues):
-                detected_poem = Poem(poem_info.genre, phrases, issues=issues)
 
-    return detected_poem, words_info, total_syllables
+def generate_poems_from_words(
+    words_info: list[WordInfo], poems_info: list[PoemInfo], strict: bool = True
+) -> Generator[Poem, None, None]:
+    """Assemble words into phrases trying to match poem figure"""
+    for poem_info in poems_info:
+        try:
+            yield compose_poem_from_words(iter(words_info), poem_info, strict=strict)
+        except BadPhraseError:
+            continue
 
 
-def compose_phrases(
-    words_info: list[WordInfo], poem_syllables: tuple[int, ...], strict: bool = True
-) -> tuple[list[Phrase], list[Issue]]:
+def compose_poem_from_words(
+    words_info: Iterator[WordInfo], poem_info: PoemInfo, strict: bool = True
+) -> Poem:
     """
     Compose phrases from list of words, and their syllables to a poem figure
     """
     phrases: list[Phrase] = []
-    final_line = len(poem_syllables) - 1
-    issues = []
-    for i, needed_syllables in enumerate(poem_syllables):
-        phrase = Phrase(position=(i, final_line), expected_syllables=needed_syllables)
-        while words_info and phrase.syllables < needed_syllables:
-            phrase.add_word(words_info.pop(0))
+    final_line = len(poem_info.syllables) - 1
+    issues_count: int = 0
+    for phrase_number, needed_syllables in enumerate(poem_info.syllables):
+        phrase = Phrase(position=(phrase_number, final_line), expected_syllables=needed_syllables)
+        while phrase.syllables < needed_syllables and (word_info := next(words_info, None)):
+            phrase.add_word(word_info)
+
+        if phrase.issues:   
+            if strict:
+                raise BadPhraseError(repr(phrase))
+            issues_count += len(phrase.issues)
+
+        phrases.append(phrase)
+
+    return Poem(poem_info.genre, phrases, total_issues=issues_count)
+
+
+def compose_poem_from_lines(
+    raw_phrases: tuple[list[WordInfo]], poem_info: PoemInfo, strict: bool = True
+) -> Poem:
+    """
+    Compose phrases from list of words, and their syllables to a poem figure
+    """
+    phrases: list[Phrase] = []
+    final_line = len(poem_info.syllables) - 1
+    issues_count: int = 0
+    for phrase_number, (raw_phrase, needed_syllables) in enumerate(zip(raw_phrases, poem_info.syllables)):
+        phrase = Phrase(position=(phrase_number, final_line), expected_syllables=needed_syllables)
+        
+        for word_info in raw_phrase:
+            phrase.add_word(word_info)
 
         if phrase.issues:
             if strict:
                 raise BadPhraseError(repr(phrase))
-            issues.extend(phrase.issues)
+            issues_count += len(phrase.issues)
+
         phrases.append(phrase)
 
-    return phrases, issues
+    return Poem(poem_info.genre, phrases, total_issues=issues_count)

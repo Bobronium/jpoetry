@@ -15,7 +15,7 @@ from jpoetry.bot import (
     welcome_user,
 )
 from jpoetry.image import TooLongTextError
-from jpoetry.poetry import detect_poem
+from jpoetry.poetry import detect_poems, iter_poems
 
 
 @pytest.fixture
@@ -117,9 +117,11 @@ async def test_detect_and_send_poem_positive(
     get_message, mocker: MockerFixture, call, hokku_text
 ):
     message = get_message(hokku_text)
-    detect_poem_mock = mocker.patch.object(
-        bot_module, 'detect_poem', Mock(return_value=detect_poem(hokku_text))
+    detect_poems_mock = mocker.patch.object(
+        bot_module, 'iter_poems', Mock(return_value=detect_poems(hokku_text))
     )
+    poem = next(iter_poems(hokku_text))
+    detect_poems_mock = mocker.patch.object(bot_module, 'iter_poems', Mock(return_value=iter([poem])))
 
     create_poem_image_mock = mocker.patch.object(bot_module, 'get_poem_image')
     input_file_mock = mocker.patch.object(bot_module, 'InputFile')
@@ -127,9 +129,9 @@ async def test_detect_and_send_poem_positive(
 
     await detect_and_send_poem(message)
     assert message.reply.mock_calls == []
-    assert detect_poem_mock.mock_calls == [call(hokku_text)]
+    assert detect_poems_mock.mock_calls == [call(hokku_text)]
     assert create_poem_image_mock.mock_calls == [
-        call(detect_poem_mock.return_value[0], 'test')
+        call(poem, 'test')
     ]
     assert input_file_mock.mock_calls == [
         call(create_poem_image_mock.return_value, filename='test — Хокку.png')
@@ -147,9 +149,9 @@ async def test_detect_and_send_poem_too_long(
     get_message, mocker: MockerFixture, call, hokku_text
 ):
     message = get_message(hokku_text)
-    detect_poem_mock = mocker.patch.object(
-        bot_module, 'detect_poem', return_value=detect_poem(hokku_text)
-    )
+    poem = next(iter_poems(hokku_text))
+    detect_poems_mock = mocker.patch.object(bot_module, 'iter_poems', Mock(return_value=iter([poem])))
+
     create_poem_image_mock = mocker.patch.object(
         bot_module, 'get_poem_image', side_effect=TooLongTextError
     )
@@ -157,10 +159,11 @@ async def test_detect_and_send_poem_too_long(
 
     await detect_and_send_poem(message)
     assert message.reply.mock_calls == []
-    assert detect_poem_mock.mock_calls == [call(hokku_text)]
+    assert detect_poems_mock.mock_calls == [call(hokku_text)]
     assert create_poem_image_mock.mock_calls == [
-        call(detect_poem_mock.return_value[0], 'test')
+        call(poem, 'test')
     ]
+
     assert send_message_mock.mock_calls == [
         call(
             message.chat.id,
@@ -173,9 +176,9 @@ async def test_detect_and_send_poem_too_long(
 async def test_detect_and_send_poem_negative(get_message, call, mocker):
     message = get_message('Not a poem')
 
-    detect_poem_mock = mocker.patch.object(
-        bot_module, 'detect_poem', return_value=detect_poem(message.text)
+    detect_poems_mock = mocker.patch.object(
+        bot_module, 'iter_poems', return_value=iter_poems(message.text)
     )
     await detect_and_send_poem(message)
-    assert detect_poem_mock.mock_calls == [call(message.text)]
+    assert detect_poems_mock.mock_calls == [call(message.text)]
     assert message.reply.mock_calls == []

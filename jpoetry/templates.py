@@ -3,7 +3,7 @@ from PIL import Image
 from jpoetry.config import ACCENT_COLOR, BASE_COLOR, RESOURCES
 
 from jpoetry.image import ImageInfo, TextConfig, Coords, Color
-from jpoetry.poetry import Genre, POETRY_SYLLABLES
+from jpoetry.poetry import Genre, POETRY_PHRASES_SYLLABLES
 
 class AuthorConfig(TextConfig):
     coords: Coords = (-73, -59)
@@ -36,5 +36,5 @@ POETRY_IMAGES_INFO: dict[Genre, ImageInfo] = {
             "author": _AUTHOR_INFO,
         },
     )
-    for genre, syllables in POETRY_SYLLABLES.items()
+    for genre, syllables in POETRY_PHRASES_SYLLABLES.items()
 }

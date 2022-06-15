@@ -77,7 +77,6 @@ def test_spell_number(number, text):
         ('яяяяяя', 6, None),  # count every vowel as syllable
         ('sponge', 1, None),  # 'e' at the end must not add syllable
         ('the', 1, None),
-        ('the', 1, None),
         ('ape', 1, None),
         ('die', 1, None),
         ("escapes", 2, None),

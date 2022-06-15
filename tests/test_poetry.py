@@ -2,7 +2,7 @@ from dataclasses import asdict
 
 import pytest
 
-from jpoetry.poetry import Genre, Issue, Phrase, detect_poem
+from jpoetry.poetry import Genre, Issue, Phrase, detect_poems
 from jpoetry.textpy import WordInfo
 
 
@@ -36,7 +36,9 @@ def test_normalize_phrase(inp, changed):
     ),
 )
 def test_detect_poem_positive(genre, text, expected_phrases):
-    poem, _, _ = detect_poem(text)
+    poems, _ = detect_poems(text)
+    assert poems
+    poem, = poems
     assert poem.genre is genre
     assert str(poem.genre) == genre == genre.value
     assert list(map(str, poem.phrases)) == list(map(str, expected_phrases))
@@ -70,4 +72,4 @@ def test_detect_poem_positive(genre, text, expected_phrases):
     ),
 )
 def test_detect_poem_negative(text):
-    assert detect_poem(text)[0] is None
+    assert not detect_poems(text)[0]
