@@ -120,19 +120,21 @@ async def print_info(message: Message) -> None:
         await asyncio.sleep(0.5)
         await message.delete()
         return
+    poems, line_infos = detect_poems(message_to_reply.text, strict=False)
+    poems_text = [repr(poem) for poem in poems if poem is not None]
+    message_total_syllables = 0
 
-    poems, words_info, total_syllables = next(
-        (detect_poems(message_to_reply.text, strict=False), (None, None, None))
-    )
-    poem = next(poems, None)
-    if poem is not None:
-        await message_to_reply.reply(escape_md(repr(poem)))
-    elif words_info is None or total_syllables is None:
-        await message_to_reply.reply(escape_md("Ну хуй знает..."))
+    if poems_text:
+        message = '\n\n'.join(poems_text)
     else:
-        await message_to_reply.reply(
-            escape_md(" ".join(map(repr, words_info)) + f"\n\nИтого: {total_syllables}")
-        )
+        info = []
+        for words_info, total_syllables in line_infos:
+            info.append(" ".join(map(repr, words_info)) + f" — {total_syllables}")
+            message_total_syllables += total_syllables
+
+        message = "\n".join(info) + f'\n\nИтого: {message_total_syllables}'
+
+    await message_to_reply.reply(escape_md(message))
 
 
 def get_interval(seconds):
