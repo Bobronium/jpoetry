@@ -1,20 +1,26 @@
 import asyncio
 from bisect import bisect_left
 from datetime import datetime
+from functools import wraps
 import logging
 import sys
 from io import BytesIO
 from pathlib import Path
 from this import d
+from typing import Any
 
 from aiogram import Bot, Dispatcher
 from aiogram.types import (
+    CallbackQuery,
     ContentType,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
     InlineQuery,
     InlineQueryResult,
     InlineQueryResultArticle,
     InputFile,
     InputMessageContent,
+    KeyboardButton,
     Message,
     ParseMode,
     Update,
@@ -42,7 +48,7 @@ class InterceptHandler(logging.Handler):
 
 logging.basicConfig(handlers=[InterceptHandler()], level=0)
 
-logger.add(sys.stderr, level="DEBUG")
+logger.add(sys.stderr, level="INFO")
 
 # Initialize bot and dispatcher
 bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.MARKDOWN_V2, validate_token=False)
@@ -56,6 +62,22 @@ GROUPS = TimeAwareCounter[int](one_day, "groups")
 MESSAGES_HANDLED_FOR_LAST_24_HOURS = TimeAwareCounter(one_day, "messages")
 POEMS_GENERATED_FOR_LAST_24_HOURS = TimeAwareCounter(one_day, "poems")
 INLINE_REQUESTS_FOR_LAST_24_HOURS = TimeAwareCounter(one_day, "inline")
+INLINE_LOCK = set()
+
+
+def throttle_query(handler: Any) -> Any:
+    @wraps(handler)
+    async def wrapper(query: CallbackQuery, *args: Any, **kwargs: Any) -> Any:
+        key = f'{query.from_user.id}:{query.message.message_id}'
+        if key in INLINE_LOCK:
+            return
+        INLINE_LOCK.add(key)
+        try:
+            await handler(query, *args, **kwargs)
+        finally:
+            INLINE_LOCK.discard(key)
+
+    return wrapper
 
 
 def get_author(message: Message, max_len: int = 40) -> str:
@@ -162,14 +184,76 @@ async def detect_and_send_poem(message: Message) -> None:
                 image_data = await asyncio.get_event_loop().run_in_executor(
                     None, get_poem_image, poem, author
                 )
-            logger.info(f"{poem.genre.name} image is created in {timer.elapsed:.4} seconds")
+            logger.info(
+                f"{poem.genre.name} image is created in {timer.elapsed:.4} seconds"
+            )
         except TooLongTextError:
             image = TOO_LONG_MESSAGE_FILE
             logger.error(f"Too many chars in {poem.genre.name}, sending default image")
         else:
             image = InputFile(image_data, filename=f"{author} — {poem.genre}.png")
 
-        await bot.send_photo(message.chat.id, image, reply_to_message_id=message.message_id)
+        await bot.send_photo(
+            message.chat.id,
+            image,
+            reply_to_message_id=message.message_id,
+            reply_markup=InlineKeyboardMarkup().add(
+                InlineKeyboardButton(text="Залить в канал", callback_data="publish")
+            ),
+        )
+
+
+@dp.callback_query_handler(lambda q: q.data == "publish")
+@throttle_query
+async def publish_image(query: CallbackQuery) -> None:
+    if query.from_user.id != query.message.reply_to_message.from_user.id:
+        await query.answer("Это не для тебя сделано.")
+        return
+
+    message = await query.message.copy_to(
+        -1001741328356, reply_markup=None, disable_notification=True
+    )
+    await query.message.edit_reply_markup(
+        reply_markup=InlineKeyboardMarkup(row_width=1)
+        .add(
+            InlineKeyboardButton(
+                text="Посмотреть в канале",
+                url=f"https://t.me/jpoetry_yoooooo/{message.message_id}",
+            ),
+        )
+        .add(
+            InlineKeyboardButton(
+                text="ГАЛЯ, ОТМЕНА!!!",
+                callback_data=f"unpublish:{message.message_id}",
+            )
+        )
+    )
+
+
+@dp.callback_query_handler(lambda q: q.data.startswith("unpublish"))
+@throttle_query
+async def unpublish_image(query: CallbackQuery) -> None:
+    if query.from_user.id != query.message.reply_to_message.from_user.id:
+        await query.answer("Это не для тебя сделано.")
+        return
+
+    if (datetime.now() - query.message.edit_date).total_seconds() > 3_600:
+        await query.answer(
+            "Прошло больше часа с момента публикации, пикча остаётся в канале.",
+            show_alert=True,
+        )
+        await query.message.edit_reply_markup(
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=query.message.reply_markup.inline_keyboard[:-1]
+            )
+        )
+    message_id = query.data.split(':')[-1]
+    await bot.delete_message(-1001741328356, int(message_id))
+    await query.answer(
+        "Потёр пикчу из канала. Повторно опубликовать нельзя.",
+        show_alert=True,
+    )
+    await query.message.edit_reply_markup(reply_markup=None)
 
 
 @dp.inline_handler()
