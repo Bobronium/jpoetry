@@ -29,23 +29,26 @@ class Timer:
         self.elapsed = monotonic() - self._start_time
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self.name!r}, elapsed={getattr(self, "elapsed", "...")})'
+        return (
+            f'{self.__class__.__name__}({self.name!r}, elapsed={getattr(self, "elapsed", "...")})'
+        )
 
 
 class TimeAwareCounter(Generic[T]):
-    
     def __init__(self, period: Seconds, name: str = "") -> None:
         self.period = period
         self.last_timestamp = None
         self.counter = 0
         self._timestamps = []
-        
+
     @property
     def timestamps(self) -> list[tuple[int, T]]:
         now = datetime.now().timestamp()
         last_allowed_timestamp = now - self.period
         if self._timestamps and self._timestamps[0][0] <= last_allowed_timestamp:
-            last_allowed_timestamp_index = bisect_left(self._timestamps, last_allowed_timestamp, key=lambda i: i[0])
+            last_allowed_timestamp_index = bisect_left(
+                self._timestamps, last_allowed_timestamp, key=lambda i: i[0]
+            )
             self._timestamps = self._timestamps[last_allowed_timestamp_index:]
         return self._timestamps
 

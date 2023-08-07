@@ -1,12 +1,11 @@
 import asyncio
+import logging
+import sys
 from bisect import bisect_left
 from datetime import datetime
 from functools import wraps
-import logging
-import sys
 from io import BytesIO
 from pathlib import Path
-from this import d
 from typing import Any
 
 from aiogram import Bot, Dispatcher
@@ -27,6 +26,7 @@ from aiogram.types import (
 )
 from aiogram.utils.markdown import escape_md
 from loguru import logger
+from this import d
 
 from jpoetry.answers import HELP_TEXT, WELCOME_TEXT
 from jpoetry.config import BOT_TOKEN, DEFAULT_AUTHOR, TOO_LONG_MESSAGE_FILE
@@ -84,14 +84,10 @@ def get_author(message: Message, max_len: int = 40) -> str:
     """
     Find most suitable author name
     """
-    if (not message.is_forward() and (user := message.from_user)) or (
-        user := message.forward_from
-    ):
+    if (not message.is_forward() and (user := message.from_user)) or (user := message.forward_from):
         author = remove_unsupported_chars(user.full_name)
 
-        if user.username and (
-            len(author) > max_len or len(author) < len(user.full_name) / 2
-        ):
+        if user.username and (len(author) > max_len or len(author) < len(user.full_name) / 2):
             author = "@" + user.username
     else:  # it's forward, but user info is hidden
         author = remove_unsupported_chars(message.forward_sender_name)
@@ -101,9 +97,7 @@ def get_author(message: Message, max_len: int = 40) -> str:
     return author
 
 
-@dp.message_handler(
-    lambda message: message.from_user.id == message.chat.id, commands=["start"]
-)
+@dp.message_handler(lambda message: message.from_user.id == message.chat.id, commands=["start"])
 async def welcome_user(message: Message) -> None:
     await message.reply(WELCOME_TEXT)
 
@@ -186,9 +180,7 @@ async def detect_and_send_poem(message: Message) -> None:
                 image_data = await asyncio.get_event_loop().run_in_executor(
                     None, get_poem_image, poem, author
                 )
-            logger.info(
-                f"{poem.genre.name} image is created in {timer.elapsed:.4} seconds"
-            )
+            logger.info(f"{poem.genre.name} image is created in {timer.elapsed:.4} seconds")
         except TooLongTextError:
             image = TOO_LONG_MESSAGE_FILE
             logger.error(f"Too many chars in {poem.genre.name}, sending default image")

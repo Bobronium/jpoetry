@@ -1,9 +1,11 @@
 from collections.abc import Sequence
-from PIL import Image
-from jpoetry.config import ACCENT_COLOR, BASE_COLOR, RESOURCES
 
-from jpoetry.image import ImageInfo, TextConfig, Coords, Color
-from jpoetry.poetry import Genre, POETRY_PHRASES_SYLLABLES
+from PIL import Image
+
+from jpoetry.config import ACCENT_COLOR, BASE_COLOR, RESOURCES
+from jpoetry.image import Color, Coords, ImageInfo, TextConfig
+from jpoetry.poetry import POETRY_PHRASES_SYLLABLES, Genre
+
 
 class AuthorConfig(TextConfig):
     coords: Coords = (-73, -59)

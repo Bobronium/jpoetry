@@ -70,9 +70,7 @@ def get_font(
     while longest_line_width > max_width:
         result_size -= max(1, (longest_line_width - max_width) // avg_pixels_difference)
         if result_size < min_size:
-            raise TooLongTextError(
-                f"Unable to fit text within min font size {min_size}"
-            )
+            raise TooLongTextError(f"Unable to fit text within min font size {min_size}")
 
         font_ = ImageFont.truetype(font, result_size)
         longest_line_width, line_height = draw.textsize(longest_line, font_)
@@ -116,9 +114,7 @@ def draw_text(
             max_width=text_info.max_line_width,
         )
         for phrase, color in zip(lines, text_info.colors):
-            draw.text(
-                (text_x, text_y), phrase, fill=color, font=font, anchor=text_info.anchor
-            )
+            draw.text((text_x, text_y), phrase, fill=color, font=font, anchor=text_info.anchor)
             text_y += int(height * line_space_multiplier)
 
     if text_lines:

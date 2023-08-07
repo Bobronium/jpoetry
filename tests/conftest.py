@@ -1,10 +1,11 @@
-import os
 import inspect
+import os
 from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
 import pytest_mock
+
 
 os.environ["BOT_TOKEN"] = "00000000000000000"
 
@@ -20,9 +21,7 @@ def pytest_collection_modifyitems(session, config, items):
     Mark coroutine functions https://github.com/pytest-dev/pytest-asyncio/issues/61
     """
     for item in items:
-        if isinstance(item, pytest.Function) and inspect.iscoroutinefunction(
-            item.function
-        ):
+        if isinstance(item, pytest.Function) and inspect.iscoroutinefunction(item.function):
             item.add_marker(pytest.mark.asyncio)
 
 

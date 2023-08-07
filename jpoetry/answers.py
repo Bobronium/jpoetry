@@ -30,9 +30,6 @@ POEM_TYPES_CHEAT_SHEET = get_poem_types_cheat_sheet()
 POEM_TYPES = get_known_poem_types()
 GENRES = f'\n\nХарактеристика жанров:\n\n{POEM_TYPES_CHEAT_SHEET}'
 WELCOME_TEXT = (
-    f'Добавь меня в группу и я буду генерировать {POEM_TYPES} из подходящих сообщений'
-    + GENRES
+    f'Добавь меня в группу и я буду генерировать {POEM_TYPES} из подходящих сообщений' + GENRES
 )
-HELP_TEXT = (
-    rf'Я здесь чтобы генерировать {POEM_TYPES} из подходящих сообщений\.' + GENRES
-)
+HELP_TEXT = rf'Я здесь чтобы генерировать {POEM_TYPES} из подходящих сообщений\.' + GENRES
