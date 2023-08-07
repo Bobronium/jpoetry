@@ -141,6 +141,9 @@ async def test_detect_and_send_poem_positive(
             message.chat.id,
             input_file_mock.return_value,
             reply_to_message_id=message.message_id,
+            reply_markup=InlineKeyboardMarkup().add(
+                InlineKeyboardButton(text="Залить в канал", callback_data="publish")
+            ),
         )
     ]
 
@@ -169,6 +172,9 @@ async def test_detect_and_send_poem_too_long(
             message.chat.id,
             TOO_LONG_MESSAGE_FILE,
             reply_to_message_id=message.message_id,
+            reply_markup=InlineKeyboardMarkup().add(
+                InlineKeyboardButton(text="Залить в канал", callback_data="publish")
+            ),
         )
     ]
 
