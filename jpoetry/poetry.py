@@ -187,17 +187,15 @@ def iter_poems(text: str) -> Generator[Poem, None, None]:
             yield poem
 
 
-def detect_poems(
-    text: str, strict: bool = True
-) -> tuple[list[Poem], list[LineInfo]]:
+def detect_poems(text: str, strict: bool = True) -> tuple[list[Poem], list[LineInfo]]:
     """
     Check if text might be a poem and return one if it is
     """
     poems = []
     lines_infos = []
-    for paragraph in text.split('\n\n'):
-        lines = paragraph.split('\n')
-        
+    for paragraph in text.split("\n\n"):
+        lines = paragraph.split("\n")
+
         if len(lines) > 1:
             poems_info = NUMBER_OF_PHRASES_TO_POEMS_INFO.get(len(lines), [])
             lines_info = [get_words_info(line.split()) for line in lines]
@@ -213,8 +211,9 @@ def detect_poems(
             lines_infos.append(line_info)
             poems_info = POEMS_INFO_MAP.get(line_info.total_syllables, [])
             poems.extend(generate_poems_from_words(line_info.words_info, poems_info))
-    
+
     return poems, lines_infos
+
 
 def generate_poems_from_lines(
     lines_info: list[LineInfo], poems_info: list[PoemInfo], strict: bool = True
@@ -247,9 +246,17 @@ def compose_poem_from_words(
     phrases: list[Phrase] = []
     final_line = len(poem_info.syllables) - 1
     issues_count: int = 0
+    total_phrases = len(poem_info.syllables)
     for phrase_number, needed_syllables in enumerate(poem_info.syllables):
-        phrase = Phrase(position=(phrase_number, final_line), expected_syllables=needed_syllables)
-        while phrase.syllables < needed_syllables and (word_info := next(words_info, None)):
+        phrase = Phrase(
+            position=(phrase_number, final_line), expected_syllables=needed_syllables
+        )
+
+        while (
+            phrase.syllables < needed_syllables
+            # get greedy on last phrase
+            or phrase_number == total_phrases
+        ) and (word_info := next(words_info, None)):
             phrase.add_word(word_info)
 
         if phrase.issues:   
