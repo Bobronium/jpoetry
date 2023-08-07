@@ -25,20 +25,11 @@ mypy:
 run:
 	python -m jpoetry
 
-init: pipenv sync
-
-shell:
-	pipenv shell
 
 coverage: test
 	coverage html
 	open htmlcov/index.html
 
-sync:  # install packages from Pipfile.lock
-	pipenv sync --dev
-
-update:  # install packages from Pipfile and generate Pipfile.lock (use when add new packages, or update existing)
-	pipenv update --dev
 
 clean:
 	@rm -rf build dist
