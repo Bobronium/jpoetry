@@ -1,40 +1,17 @@
-
-<div align="center">
-<h1 align="center">
-<img src="https://raw.githubusercontent.com/PKief/vscode-material-icon-theme/ec559a9f6bfd399b82bb44393651661b08aaf7ba/icons/folder-markdown-open.svg" width="100" />
-<br>
-</h1>
-<h3>◦ ColLABorate and code, Empowering developers.</h3>
-<h3>◦ Developed with the software and tools listed below.</h3>
-
-<p align="center">
-<img src="https://img.shields.io/badge/Python-3776AB.svg?style&logo=Python&logoColor=white" alt="Python" />
-<img src="https://img.shields.io/badge/Docker-2496ED.svg?style&logo=Docker&logoColor=white" alt="Docker" />
-<img src="https://img.shields.io/badge/GitHub%20Actions-2088FF.svg?style&logo=GitHub-Actions&logoColor=white" alt="GitHub%20Actions" />
-<img src="https://img.shields.io/badge/JSON-000000.svg?style&logo=JSON&logoColor=white" alt="JSON" />
-</p>
-</div>
-
-
-
----
-
-## 📒 Table of Contents
-- [📒 Table of Contents](#-table-of-contents)
-- [📍 Overview](#-overview)
-- [⚙️ Features](#-features)
-- [📂 Project Structure](#project-structure)
-- [🧩 Modules](#modules)
-- [🚀 Getting Started](#-getting-started)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
-- [👏 Acknowledgments](#-acknowledgments)
+# JPoetry
+![telegram-cloud-photo-size-2-5370743251327372739-y](https://github.com/Bobronium/jpoetry/assets/36469655/7f9708e3-e632-472a-af65-08be89d4b9c1)
 
 ---
 
 ## 👨‍💻Author's note
 I've developed and deployed this project a while ago, but never shared it to allow contribution and transparency. Now it's time to fix it. 
 This README is generated via LLM, so it's not ideal, but I like how it picked up on the essence and deacribed modules. Shoutout to @eli64s for his https://github.com/eli64s/README-AI 🙌
+
+## 💬 Usecase: 
+Add bot to the group and passively wait until some message will fit into a poetic figure. JPoetry will pick up on this and will generate an image with related message.
+
+Check it out at https://t.me/JPoetryBot
+
 
 
 ## 📍 Overview
