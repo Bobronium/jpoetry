@@ -51,7 +51,7 @@ WORKDIR $PYSETUP_PATH
 COPY poetry.lock pyproject.toml ./
 
 # install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
-RUN poetry install --no-dev
+RUN --mount=type=cache,target=/root/.cache poetry install --no-dev
 
 
 # `development` image is used during development / testing
@@ -65,7 +65,7 @@ COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
 
 # quicker install as runtime deps are already installed
-RUN poetry install
+RUN --mount=type=cache,target=/root/.cache poetry install
 
 # will become mountpoint of our code
 COPY . /app/
