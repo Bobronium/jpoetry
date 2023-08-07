@@ -47,14 +47,10 @@ NUMBER_OF_PHRASES_TO_POEMS_INFO: dict[int, list[PoemInfo]] = {}
 
 # create poems info, so we can look up poems by total number of syllables or paragraphs
 # sorting it here just for prettier output later
-for _genre, _phrases_syllables in sorted(
-    POETRY_PHRASES_SYLLABLES.items(), key=lambda x: sum(x[1])
-):
+for _genre, _phrases_syllables in sorted(POETRY_PHRASES_SYLLABLES.items(), key=lambda x: sum(x[1])):
     _poem_info = PoemInfo(_genre, _phrases_syllables)
     POEMS_INFO_MAP.setdefault(sum(_phrases_syllables), []).append(_poem_info)
-    NUMBER_OF_PHRASES_TO_POEMS_INFO.setdefault(len(_phrases_syllables), []).append(
-        _poem_info
-    )
+    NUMBER_OF_PHRASES_TO_POEMS_INFO.setdefault(len(_phrases_syllables), []).append(_poem_info)
 
 del (
     _genre,
@@ -112,9 +108,7 @@ class Phrase:
         if not normalized_word:
             return
 
-        self.words.append(
-            WordInfo(normalized_word, word_info.syllables)
-        )
+        self.words.append(WordInfo(normalized_word, word_info.syllables))
         if self._open_quotes != self._close_quotes and final:
             self.issues.add(PHRASE_CONTAINS_UNMATCHED_QUOTE)
 
@@ -130,9 +124,7 @@ class Phrase:
         word_without_unknown_chars = remove_unsupported_chars(word)
         if word_without_unknown_chars not in word:
             self.issues.add(
-                Issue(
-                    f"Word changed too much after removing unknown characters: {word}"
-                )
+                Issue(f"Word changed too much after removing unknown characters: {word}")
             )
 
         word = word_without_unknown_chars
@@ -141,9 +133,7 @@ class Phrase:
         # unless, it's in quotes.
         if not final and self._open_quotes <= self._close_quotes:
             if word != word.strip(NON_FINAL_CHARS):
-                self.issues.add(
-                    Issue(f"Phrase contains forbidden punctuation: {word!r}")
-                )
+                self.issues.add(Issue(f"Phrase contains forbidden punctuation: {word!r}"))
         elif word in NON_FINAL_WORDS and self.position[1] - self.position[0] != 1:
             self.issues.add(Issue(f"Phrase ends with a forbidden word: {word!r}"))
         return word.lower().strip()
@@ -160,11 +150,7 @@ class Phrase:
                 if self.syllables != self.expected_syllables
                 else f" ({self.expected_syllables})"
             ).translate(SUPERSCRIPT_NUMBERS_TRANSLATOR)
-            + (
-                textwrap.indent("\n^" + "\n".join(self.issues), "\t")
-                if self.issues
-                else ""
-            )
+            + (textwrap.indent("\n^" + "\n".join(self.issues), "\t") if self.issues else "")
         )
 
 
@@ -248,9 +234,7 @@ def compose_poem_from_words(
     issues_count: int = 0
     total_phrases = len(poem_info.syllables)
     for phrase_number, needed_syllables in enumerate(poem_info.syllables):
-        phrase = Phrase(
-            position=(phrase_number, final_line), expected_syllables=needed_syllables
-        )
+        phrase = Phrase(position=(phrase_number, final_line), expected_syllables=needed_syllables)
 
         while (
             phrase.syllables < needed_syllables
@@ -259,7 +243,7 @@ def compose_poem_from_words(
         ) and (word_info := next(words_info, None)):
             phrase.add_word(word_info)
 
-        if phrase.issues:   
+        if phrase.issues:
             if strict:
                 raise BadPhraseError(repr(phrase))
             issues_count += len(phrase.issues)
@@ -278,9 +262,11 @@ def compose_poem_from_lines(
     phrases: list[Phrase] = []
     final_line = len(poem_info.syllables) - 1
     issues_count: int = 0
-    for phrase_number, (raw_phrase, needed_syllables) in enumerate(zip(raw_phrases, poem_info.syllables)):
+    for phrase_number, (raw_phrase, needed_syllables) in enumerate(
+        zip(raw_phrases, poem_info.syllables)
+    ):
         phrase = Phrase(position=(phrase_number, final_line), expected_syllables=needed_syllables)
-        
+
         for word_info in raw_phrase.words_info:
             phrase.add_word(word_info)
 

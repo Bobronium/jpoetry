@@ -14,7 +14,10 @@ from jpoetry.textpy import WordInfo
         ("'WOW!' — said the guy,", "'wow!' — said the guy,"),
         ('"This is a quote"', '"this is a quote"'),
         ("∂ßƒ∂", "ßƒ"),
-        ("🤷🏻‍♀ не уверена что это оптимально по ряду причин.", "не уверена что это оптимально по ряду причин."),
+        (
+            "🤷🏻‍♀ не уверена что это оптимально по ряду причин.",
+            "не уверена что это оптимально по ряду причин.",
+        ),
         pytest.param("ß∂∂ƒ", "ßƒ"),
     ),
 )
@@ -43,7 +46,7 @@ def test_normalize_phrase(inp, changed):
 def test_detect_poem_positive(genre, text, expected_phrases):
     poems, _ = detect_poems(text)
     assert poems
-    poem, = poems
+    (poem,) = poems
     assert poem.genre is genre
     assert str(poem.genre) == genre == genre.value
     assert list(map(str, poem.phrases)) == list(map(str, expected_phrases))

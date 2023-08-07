@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import pytest
 
 import jpoetry
@@ -12,9 +13,9 @@ from jpoetry.text import (
     count_word_syllables,
     get_words_info,
     morph,
-    spell_number,
     parse_word,
     quantitative_to_numeral,
+    spell_number,
 )
 
 
@@ -151,6 +152,4 @@ def test_agree_with_number(word, number, result):
 
 def test_agree_with_number_error(mocker):
     mocker.patch.object(text, 'parse_word', side_effect=ParseError)
-    assert (
-        agree_with_number('ох ну и как это парсить?', 5) == 'ох ну и как это парсить?'
-    )
+    assert agree_with_number('ох ну и как это парсить?', 5) == 'ох ну и как это парсить?'

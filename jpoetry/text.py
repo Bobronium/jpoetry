@@ -5,7 +5,7 @@ from pymorphy2 import MorphAnalyzer
 from pymorphy2.analyzer import Parse
 
 from jpoetry.config import KNOWN_GLYPHS
-from jpoetry.textpy import BadNumberError, ParseError, LineInfo, WordInfo
+from jpoetry.textpy import BadNumberError, LineInfo, ParseError, WordInfo
 
 
 morph = MorphAnalyzer()
@@ -120,9 +120,7 @@ def spell_number(decimal: str, inflect: str = None) -> str:
                 pass
         elif any(char.isdecimal() for char in decimal[i:]):
             raise BadNumberError(f"Unable to parse number {decimal}")
-        elif (ending := decimal[i:]).startswith(
-            "-"
-        ):  # is this readable? Do you find it confusing?
+        elif (ending := decimal[i:]).startswith("-"):  # is this readable? Do you find it confusing?
             ending = ending[1:]
             break
     try:
@@ -230,11 +228,7 @@ def count_word_syllables(word: str) -> int:
 
     if word.endswith('pean'):
         syllables += 1
-    elif (
-        word.endswith("e")
-        and syllables > 1
-        and (len(word) > 3 or set(word) - LATIN_VOWELS)
-    ):
+    elif word.endswith("e") and syllables > 1 and (len(word) > 3 or set(word) - LATIN_VOWELS):
         syllables -= 1
         if word.endswith("le") and word_length > 2 and word[-3] not in LATIN_VOWELS:
             syllables += 1
@@ -248,11 +242,7 @@ def count_word_syllables(word: str) -> int:
         and word_length > 2
     ):
         syllables -= 1
-    elif (
-        word.endswith("es")
-        and word[-3] not in LATIN_VOWELS
-        and word[-4] in LATIN_VOWELS
-    ):
+    elif word.endswith("es") and word[-3] not in LATIN_VOWELS and word[-4] in LATIN_VOWELS:
         syllables -= 1
 
     if (ounce := word.find("ounce")) != -1:
@@ -262,17 +252,12 @@ def count_word_syllables(word: str) -> int:
         except IndexError:
             pass
         else:
-            if (
-                letter_after_ounce not in LATIN_VOWELS
-                and next_letter_after_ounce in LATIN_VOWELS
-            ):
+            if letter_after_ounce not in LATIN_VOWELS and next_letter_after_ounce in LATIN_VOWELS:
                 syllables -= 1
 
     if not syllables and set(word) & ASCII:
         # TODO: check abbr tag in parsed word
-        syllables = len(
-            word.replace(current_number, "")
-        )  # likely abbreviation or single letter
+        syllables = len(word.replace(current_number, ""))  # likely abbreviation or single letter
 
     return syllables + number_syllables
 
