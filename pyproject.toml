@@ -12,11 +12,10 @@ dependencies = [
     "fonttools>=4.20.0,<5",
     "Pillow>=9.0.0,<10",
     "pytils>=0.3,<1",
-    "pymorphy2",
+    "pymorphy2 @ git+https://github.com/pymorphy2-fork/pymorphy2.git",
     "pymorphy2-dicts",
     "loguru>=0.5.3,<1",
     "uvloop>=0.15.2,<1",
-    "dawg2",
     "freezegun>=1.2.1,<2",
     "setuptools",
 ]
@@ -40,3 +39,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["jpoetry"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
