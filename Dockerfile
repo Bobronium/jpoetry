@@ -1,6 +1,8 @@
 # used this example as a reference: https://github.com/python-poetry/poetry/discussions/1879#discussioncomment-216865
 # `python-base` sets up all our shared environment variables
-FROM python:3.10.1-slim as python-base
+# there are issues when running on arm64 (dawg related)
+ARG TARGETPLATFORM=linux/amd64
+FROM --platform=${TARGETPLATFORM} python:3.10.1-slim AS python-base
 
     # python
 ENV PYTHONUNBUFFERED=1 \
@@ -35,7 +37,7 @@ ENV PATH="$VENV_PATH/bin:$PATH"
 
 
 # `builder-base` stage is used to build deps + create our virtual environment
-FROM python-base as builder-base
+FROM python-base AS builder-base
 RUN apt update \
     && apt install --no-install-recommends -y \
         curl \
@@ -43,19 +45,17 @@ RUN apt update \
         git \
         build-essential
 
-RUN pip install pipx-in-pipx
-RUN pipx install poetry
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # copy project requirement files here to ensure they will be cached.
 WORKDIR $PYSETUP_PATH
-COPY poetry.lock pyproject.toml ./
+COPY uv.lock pyproject.toml ./
 
-# install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
-RUN --mount=type=cache,target=/root/.cache poetry install --no-dev
+RUN --mount=type=cache,target=/root/.cache/uv uv sync
 
 
 # `development` image is used during development / testing
-FROM python-base as development
+FROM python-base AS development
 WORKDIR $PYSETUP_PATH
 
 # copy in our built poetry + venv
@@ -72,7 +72,7 @@ COPY . /app/
 WORKDIR /app
 
 
-FROM python-base as runtime
+FROM python-base AS runtime
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 COPY ./jpoetry /app/jpoetry/
 COPY ./resources /app/resources/

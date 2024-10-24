@@ -1,48 +1,42 @@
-[tool.poetry]
+[project]
 name = "jpoetry"
 version = "0.1.0"
 description = "Telegram Bot converting messages into Japanese poetry"
-readme = "README.MD"
-authors = ["Bobronium <appkiller16@gmail.com>"]
-license = "MIT"
+authors = [
+    {name = "Bobronium", email = "appkiller16@gmail.com"}
+]
+license = {text = "MIT"}
+dependencies = [
+    "aiogram>=2.20,<3",
+    "pydantic>=1.7.3,<2",
+    "fonttools>=4.20.0,<5",
+    "Pillow>=9.0.0,<10",
+    "pytils>=0.3,<1",
+    "pymorphy2",
+    "pymorphy2-dicts",
+    "loguru>=0.5.3,<1",
+    "uvloop>=0.15.2,<1",
+    "dawg2",
+    "freezegun>=1.2.1,<2",
+    "setuptools",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-aiogram = "^2.20"
-pydantic = "^1.7.3"
-fonttools = "^4.20.0"
-Pillow = "~9"
-
-pytils = "^0.3"
-pymorphy2 = "^0.9"
-
-loguru = "^0.5.3"
-
-uvloop = "^0.15.2"
-DAWG-Patched = "^0.9.1"
-freezegun = "^1.2.1"
-
-[tool.poetry.dev-dependencies]
-flake8 = "*"
-isort = "*"
-pytest = "*"
-mypy = "*"
-black = "*"
-pytest-asyncio = "*"
-coverage = "*"
-
-# flake8 plugins:
-flake8-use-fstring = "*"  # enforce f-string formatting
-flake8-comprehensions = "*"  # A plugin that helps you write better list/set/dict comprehensions.
-flake8-bugbear = "*"  # A plugin for Flake8 finding likely bugs and design problems in your program.
-
-# pytest plugins:
-pytest-cov = "*"
-pytest-mock = "*"
-pytest-sugar = "*"
-aresponses = "*"
-
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "pytest",
+    "mypy",
+    "pytest-asyncio",
+    "coverage",
+    "pytest-cov",
+    "pytest-mock",
+    "pytest-sugar",
+    "aresponses"
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["jpoetry"]
