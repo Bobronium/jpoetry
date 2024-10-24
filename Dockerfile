@@ -1,8 +1,7 @@
 # used this example as a reference: https://github.com/python-poetry/poetry/discussions/1879#discussioncomment-216865
 # `python-base` sets up all our shared environment variables
 # there are issues when running on arm64 (dawg related)
-ARG TARGETPLATFORM=linux/arm64
-FROM --platform=${TARGETPLATFORM} python:3.10.1-slim AS python-base
+FROM python:3.10.1-slim AS python-base
 
     # python
 ENV PYTHONUNBUFFERED=1 \
@@ -62,10 +61,6 @@ WORKDIR $PYSETUP_PATH
 COPY --from=builder-base $PIPX_HOME $PIPX_HOME
 COPY --from=builder-base $PIPX_BIN_DIR $PIPX_BIN_DIR
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
-
-
-# quicker install as runtime deps are already installed
-RUN --mount=type=cache,target=/root/.cache poetry install
 
 # will become mountpoint of our code
 COPY . /app/
