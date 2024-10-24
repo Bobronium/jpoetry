@@ -1,7 +1,7 @@
 # used this example as a reference: https://github.com/python-poetry/poetry/discussions/1879#discussioncomment-216865
 # `python-base` sets up all our shared environment variables
 # there are issues when running on arm64 (dawg related)
-ARG TARGETPLATFORM=linux/amd64
+ARG TARGETPLATFORM=linux/arm64
 FROM --platform=${TARGETPLATFORM} python:3.10.1-slim AS python-base
 
     # python
