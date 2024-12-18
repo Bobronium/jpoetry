@@ -287,7 +287,6 @@ async def answer_inline_query(query: InlineQuery) -> None:
         if len(message_text) > 30:
             info = f"{total_syllables}: " + f'{words[:10]}...{words[-17:]}'
 
-    print(info)
     await query.answer(
         results=[
             InlineQueryResultArticle(
