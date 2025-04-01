@@ -97,6 +97,13 @@ def get_author(message: Message, max_len: int = 40) -> str:
     return author
 
 
+def button_not_available_text(poem_message: Message) -> str:
+    author = get_author(poem_message.reply_to_message)
+    if author == DEFAULT_AUTHOR:
+        author = "автор"
+    return f"🔒 Только {author} может использовать эту кнопку."
+
+
 @dp.message_handler(lambda message: message.from_user.id == message.chat.id, commands=["start"])
 async def welcome_user(message: Message) -> None:
     await message.reply(WELCOME_TEXT)
@@ -201,7 +208,7 @@ async def detect_and_send_poem(message: Message) -> None:
 @throttle_query
 async def publish_image(query: CallbackQuery) -> None:
     if query.from_user.id != query.message.reply_to_message.from_user.id:
-        await query.answer("Это не для тебя сделано.")
+        await query.answer(button_not_available_text(query.message))
         return
 
     message = await query.message.copy_to(
@@ -228,7 +235,7 @@ async def publish_image(query: CallbackQuery) -> None:
 @throttle_query
 async def unpublish_image(query: CallbackQuery) -> None:
     if query.from_user.id != query.message.reply_to_message.from_user.id:
-        await query.answer("Это не для тебя сделано.")
+        await query.answer(button_not_available_text(query.message))
         return
 
     if (datetime.now() - query.message.edit_date).total_seconds() > 3_600:
